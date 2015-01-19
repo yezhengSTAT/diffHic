@@ -34,15 +34,9 @@ SEXP cluster_2d (SEXP, SEXP, SEXP, SEXP, SEXP);
 
 SEXP split_clusters (SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
-SEXP collect_background (SEXP, SEXP, SEXP, SEXP, SEXP);
-
-SEXP max_background (SEXP, SEXP, SEXP, SEXP, SEXP);
-
 SEXP quadrant_bg (SEXP, SEXP, 
 	SEXP, SEXP, SEXP, 
 	SEXP, SEXP, SEXP, SEXP);
-
-SEXP collect_diagonal (SEXP, SEXP, SEXP, SEXP, SEXP);
 
 SEXP count_connect(SEXP, SEXP, SEXP, SEXP, SEXP);
 

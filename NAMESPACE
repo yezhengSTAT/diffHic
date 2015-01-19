@@ -9,9 +9,9 @@ export(diffHicUsersGuide,
 	loadChromos, loadData,
 	DIList, pairParam,
     squareCounts, connectCounts, marginCounts, totalCounts, 
-    countNeighbors, enrichedGap, #filterCounts, 
     correctedContact, normalizeCNV, matchMargins,
     getDistance, getArea,
+	enrichedGap,
     boxPairs, clusterPairs,
     plotPlaid, rotPlaid, plotDI, rotDI)
 
