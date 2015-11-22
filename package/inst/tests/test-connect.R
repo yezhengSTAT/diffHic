@@ -265,7 +265,8 @@ secondcomp <- function(nreads, cuts, ranges1, ranges2, filter=0L, type="any", re
 	if (!identical(assay(ref), assay(out))) { stop("mismatch in counts") }
 	if (!identical(ref$totals, out$totals)) { stop("mismatch in total output") }	
 
-	return(cbind(anchor1=head(ref@anchor1), anchor2=head(ref@anchor2), head(ref@counts)))
+	return(cbind(anchor1=head(anchors(ref, type="first", id=TRUE)), 
+                 anchor2=head(anchors(ref, type="second", id=TRUE)), head(ref@counts)))
 }
 
 set.seed(234872)
