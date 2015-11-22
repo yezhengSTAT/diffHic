@@ -25,7 +25,8 @@ exportClasses(
 )
 
 exportMethods(
-    asDGEList, normOffsets, reform
+    anchors, targets, counts, regions, 
+	asDGEList, normOffsets, reform
     , normalize
 )
 
@@ -35,4 +36,6 @@ import(Rsamtools,GenomicRanges,Biostrings,BSgenome,rhdf5,
 	edgeR,limma,locfit,methods,csaw,
     InteractionSet,SummarizedExperiment
 )
+	
+importFrom("BiocGenerics", counts)
 
