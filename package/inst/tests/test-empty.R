@@ -14,7 +14,7 @@ getArea(ghost, bp=TRUE)
 
 f.out <- "empty.h5"
 param <- pairParam(GRanges("chrA", IRanges(1:5, 1:5)))
-savePairs(data.frame(anchor.id=integer(0), target.id=integer(0)), file=f.out, param=param)
+savePairs(data.frame(anchor1.id=integer(0), anchor2.id=integer(0)), file=f.out, param=param)
 
 loadChromos(f.out) # While we're here, let's see what happens.
 unlink(f.out)
