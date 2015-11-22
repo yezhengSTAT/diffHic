@@ -6,7 +6,7 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 #
 # written by Aaron Lun
 # a long time ago.
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	nlibs <- length(files)
 	if (nlibs==0L) { stop("number of libraries must be positive") } 
@@ -116,11 +116,10 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	out.counts <- do.call(rbind, out.counts)
 	anchors <- unlist(out.left)
 	targets <- unlist(out.right)
-	o.all <- order(anchors, targets)
 
-	return(DIList(counts=out.counts[o.all,,drop=FALSE], totals=full.sizes, 
-		anchors=anchors[o.all], targets=targets[o.all], regions=regions,
-		exptData=List(param=param)))
+	out <- InteractionSet(list(counts=out.counts[o.all,,drop=FALSE]), colData=DataFrame(totals=full.sizes), 
+		anchor1=anchors[o.all], anchor2=targets[o.all], regions=regions, metadata=List(param=param))
+    return(sort(out))
 }
 
 .retrieveHits <- function(frag.id, nfrags) { 

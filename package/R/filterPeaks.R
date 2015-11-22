@@ -5,7 +5,7 @@ enrichedPairs <- function(data, flank=5, exclude=0, prior.count=2, abundances=NU
 #
 # written by Aaron Lun
 # created 23 April 2014
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	flank <- as.integer(flank)
 	exclude <- as.integer(exclude)
@@ -32,9 +32,9 @@ enrichedPairs <- function(data, flank=5, exclude=0, prior.count=2, abundances=NU
 	# Running through each pair of chromosomes.
 	np <- nrow(data)
 	all.chrs <- as.character(seqnames(regions(data)))
-	aid <- anchors(data, id=TRUE)
+	aid <- anchors(data, type="first", id=TRUE)
 	by.chr <- split(seq_len(np), all.chrs[aid])
-	tid <- targets(data, id=TRUE)
+	tid <- anchors(data, type="second", id=TRUE)
 	output <- numeric(np)
 
 	for (anchor in names(by.chr)) {
@@ -73,16 +73,16 @@ filterPeaks <- function(data, enrichment, min.enrich=log2(1.5), min.count=5, min
 # 
 # written by Aaron Lun
 # created 23 March 2015
-# last modified 24 March 2015
+# last modified 22 November 2015
 {
 	keep <- enrichment > min.enrich 
 	if (!is.null(min.count)) { 
 		ab <- aveLogCPM(asDGEList(data), ...)
 		keep <- keep & ab > aveLogCPM(min.count, lib.size=mean(data$totals), ...)
 	} 
-	if (!is.null(min.diag)) { 
-		keep <- keep & (is.na(getDistance(data))  |
-			anchors(data, id=TRUE) - targets(data, id=TRUE) >= min.diag)
+	if (!is.null(min.diag)) {
+        cur.dist <- pairdist(data, type="diag")  
+		keep <- keep & (is.na(cur.dist) | cur.dist >= min.diag)
 	}
 	return(keep)
 }

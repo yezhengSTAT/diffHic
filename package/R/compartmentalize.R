@@ -5,9 +5,9 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 #
 # written by Aaron Lun
 # created 26 May 2015
-# last modified 25 July 2015
+# last modified 22 November 2015
 {
-	is.intra <- !is.na(getDistance(data))
+	is.intra <- intrachr(data)
 	data <- data[is.intra,]
 	if (dist.correct) {
 		trended <- filterTrended(data)
@@ -21,8 +21,8 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	# Going chromosome-by-chromosome.
 	stored <- list()
 	for (chr in seqlevels(regions(data))) {
-		mat <- as.matrix(data, first=chr, fill=contacts)
-		stored[[chr]] <- .compartChr(mat, data, dist2trend, robust.cov, cov.correct, centers, ...)
+		mat <- inflate(data, first=chr, second=chr, fill=contacts)
+		stored[[chr]] <- .compartChr(as.matrix(mat), data, dist2trend, robust.cov, cov.correct, centers, ...)
 	}
 
 # Not sensible to use the entire thing, as clustering will probably be dominated by chromosome, not compartment.
@@ -41,7 +41,7 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	seq.id <- as.integer(seqnames(regions(data)))
 	mid.pts <- mid(ranges(regions(data)))
 	lost.dist <- abs(mid.pts[lost[,1]] - mid.pts[lost[,2]])
-	lost.dist <- log10(lost.dist + exptData(data)$width)
+	lost.dist <- log10(lost.dist + metadata(data)$width)
 	mat[is.na(mat)] <- .makeEmpty(data) - dist2trend(lost.dist)
 
 	# Correcting for coverage biases, by subtracting half the average coverage from both rows

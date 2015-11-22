@@ -5,7 +5,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 #
 # written by Aaron Lun
 # created 18 September 2014
-# last modified 28 April 2015
+# last modified 22 November 2015
 {
 	xchr <- as.character(seqnames(region))
 	xstart <- start(region)
@@ -14,7 +14,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 
 	# Setting up the parameters
 	fragments <- param$fragments
-	if (!xchr %in% seqlevels(fragments)) { stop("anchor/target chromosome names not in cut site list") } 
+	if (!xchr %in% seqlevels(fragments)) { stop("chromosome name not in cut site list") } 
 	discard <- .splitDiscards(param$discard)
 	cap <- param$cap
 	frag.by.chr <- .splitByChr(fragments)
@@ -22,7 +22,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 	# Setting up the boundaries.
 	x.min <- max(1L, xstart)
 	x.max <- min(seqlengths(fragments)[[xchr]], xend)
-	if (x.min >= x.max) { stop("invalid anchor/target ranges supplied") }
+	if (x.min >= x.max) { stop("invalid ranges supplied") }
 	max.height <- x.max - x.min
 
 	# Setting up the boxes.		
@@ -46,7 +46,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 		current <- .baseHiCParser(TRUE, file, xchr, xchr, chr.limits=frag.by.chr,
 			discard=discard, cap=cap)[[1]]
 	} else { 
-		current<-data.frame(anchor.id=integer(0), target.id=integer(0))
+		current<-data.frame(anchor1.id=integer(0), anchor2.id=integer(0))
 	}
 
 	# Making the plot.
@@ -60,16 +60,16 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 	if (!nrow(current))	{ return(invisible(colfun)) }
 
 	# Collating read pairs into counts.
-   	retain <- keep.frag[current$anchor.id] & keep.frag[current$target.id]
+   	retain <- keep.frag[current$anchor1.id] & keep.frag[current$anchor2.id]
 	bin.indices <- out.id[keep.frag]
 	out<-.Call(cxx_count_patch, list(current[retain,]), out.id, 1L, 
 			bin.indices[1L], tail(bin.indices, 1L)) # First and last bin indices on interval of interest.
 	if (is.character(out)) { stop(out) }
 
 	# Rotating the vertices.
-	anchors <- new.pts$region[out[[1]]]
-	targets <- new.pts$region[out[[2]]]
-	corner <- .spawnVertices(anchors, targets)
+	anchor1.regions <- new.pts$region[out[[1]]]
+    anchor2.regions <- new.pts$region[out[[2]]]
+	corner <- .spawnVertices(anchor1.regions, anchor2.regions)
 
 	# Plotting these new vertices.
 	polygon(corner$x, corner$y, border=NA, col=colfun(out[[3]]))
@@ -78,20 +78,20 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 
 #################################################################
 
-.spawnVertices <- function(anchors, targets) {
-	all.x <- all.y <- rep(NA, length(anchors)*5L-1L)
-	hits <- 0:(length(anchors)-1L) * 5L
+.spawnVertices <- function(anchor1.regions, anchor2.regions) {
+	all.x <- all.y <- rep(NA, length(anchor1.regions)*5L-1L)
+	hits <- 0:(length(anchor1.regions)-1L) * 5L
 	counter <- 1L
 	for (mode in list(c(1,1), c(1,2), c(2,2), c(2,1))) {
 		if (mode[1]==1L) { 
-			cur.x <- start(anchors) - 0.5
+			cur.x <- start(anchor1.regions) - 0.5
 		} else {
-			cur.x <- end(anchors) + 0.5
+			cur.x <- end(anchor1.regions) + 0.5
 		} 
 		if (mode[2]==1L) { 
-			cur.y <- start(targets) - 0.5
+			cur.y <- start(anchor2.regions) - 0.5
 		} else {
-			cur.y <- end(targets) + 0.5
+			cur.y <- end(anchor2.regions) + 0.5
 		}
 		all.x[counter+hits] <- (cur.x + cur.y)/2
 		all.y[counter+hits] <- cur.x - cur.y
@@ -110,7 +110,7 @@ rotDI <- function(data, fc, region, col.up="red", col.down="blue",
 #
 # written by Aaron Lun
 # created 18 September 2014
-# last modified 28 April 2015
+# last modified 22 November 2015
 {
 	xchr <- as.character(seqnames(region))
 	xstart <- start(region)
@@ -120,12 +120,12 @@ rotDI <- function(data, fc, region, col.up="red", col.down="blue",
 	# Setting up the boundaries.
 	x.min <- max(1L, xstart)
 	x.max <- min(seqlengths(regions(data))[[xchr]], xend)
-	if (x.min >= x.max) { stop("invalid anchor/target ranges supplied") }
+	if (x.min >= x.max) { stop("invalid ranges supplied") }
 	max.height <- x.max - x.min
 						
 	# Identifying the fragments in our ranges of interest.
 	ref.keep <- overlapsAny(regions(data), region, maxgap=max.height*0.7)
-	keep <- ref.keep[anchors(data, id=TRUE)] & ref.keep[targets(data, id=TRUE)]
+	keep <- ref.keep[anchors(data, type="first", id=TRUE)] & ref.keep[anchors(data, type="second", id=TRUE)]
 
 	# Making the plot.
 	if (is.null(xlab)) { xlab <- xchr }
@@ -143,7 +143,7 @@ rotDI <- function(data, fc, region, col.up="red", col.down="blue",
 
 	# Rotating the vertices and plotting them.
 	current <- data[keep,]
-	corner <- .spawnVertices(anchors(current), targets(current))
+	corner <- .spawnVertices(anchors(current, type="first"), anchors(current, type="second"))
 	polygon(corner$x, corner$y, border=NA, col=colfun(fc[keep]))
 	return(invisible(colfun))
 }

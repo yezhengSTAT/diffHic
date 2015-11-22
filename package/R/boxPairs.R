@@ -5,16 +5,16 @@ boxPairs <- function(..., reference, minbox=FALSE)
 #
 # written by Aaron Lun
 # created 3 June 2014
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	all.hits <- list(...)
 	nk <- length(all.hits)
 	if (missing(reference)) { 
-		reference <- max(sapply(all.hits, FUN=function(x) { exptData(x)$width }))
+		reference <- max(sapply(all.hits, FUN=function(x) { metadata(x)$width }))
 	}
-	fragments <- exptData(all.hits[[1]])$param$fragments
+	fragments <- metadata(all.hits[[1]])$param$fragments
 	for (x in all.hits[-1]) { 
-		if (!identical(exptData(x)$param$fragments, fragments)) {
+		if (!identical(metadata(x)$param$fragments, fragments)) {
 			stop("fragment boundaries should be the same between DIList objects")
 		}
 	}
@@ -30,8 +30,8 @@ boxPairs <- function(..., reference, minbox=FALSE)
 		olap <- findOverlaps(regions(current), parents, type="within", select="first")
 		if (any(is.na(olap))) { stop("smaller bins must be fully contained within larger bins") }
 		
-		all.a[[x]] <- olap[anchors(current, id=TRUE)]
-		all.t[[x]] <- olap[targets(current, id=TRUE)]
+		all.a[[x]] <- olap[anchors(current, type="first", id=TRUE)]
+		all.t[[x]] <- olap[anchors(current, type="second", id=TRUE)]
 		all.mode[[x]] <- rep(x, ncur)
 		all.idx[[x]] <- seq_len(ncur)
 		num.pairs[[x]] <- ncur
@@ -67,8 +67,8 @@ boxPairs <- function(..., reference, minbox=FALSE)
 		a.chrs <- a.starts <- a.ends <- t.chrs <- t.starts <- t.ends <- list()
 		for (x in seq.it.nk) {
 			current <- all.hits[[x]]
-			aid <- anchors(current, id=TRUE)
-			tid <- targets(current, id=TRUE)
+			aid <- anchors(current, type="first", id=TRUE)
+			tid <- anchors(current, type="second", id=TRUE)
 			rstarts <- start(regions(current))
 			rends <- end(regions(current))
 			rchrs <- as.character(seqnames(regions(current)))
@@ -87,5 +87,5 @@ boxPairs <- function(..., reference, minbox=FALSE)
 		anchors <- parents[all.a[is.diff]]
 		targets <- parents[all.t[is.diff]]
 	}
-	return(list(indices=indices, anchors=anchors, targets=targets))
+	return(list(indices=indices, anchor1=anchors, anchor2=targets))
 }

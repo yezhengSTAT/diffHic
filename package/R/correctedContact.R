@@ -10,7 +10,7 @@ correctedContact <- function(data, iterations=50, exclude.local=1, ignore.low=0.
 #
 # written by Aaron Lun
 # some time ago	
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	if (!average & ncol(data)>1L) {
 		collected.truth <- collected.bias <- collected.max <- collected.trend <- list()
@@ -59,8 +59,9 @@ correctedContact <- function(data, iterations=50, exclude.local=1, ignore.low=0.
 		}
 	}
 
-	out<-.Call(cxx_iterative_correction, ave.counts[nzero], anchors(data, id=TRUE)[nzero], targets(data, id=TRUE)[nzero], 
-		is.local[nzero], length(regions(data)), iterations, exclude.local, ignore.low, winsor.high)
+	out<-.Call(cxx_iterative_correction, ave.counts[nzero], 
+               anchors(data, type="first", id=TRUE)[nzero], anchors(data, type="second", id=TRUE)[nzero], 
+               is.local[nzero], length(regions(data)), iterations, exclude.local, ignore.low, winsor.high)
  	if (is.character(out)) { stop(out) }
 	full.truth <- rep(0, length(nzero))
 	full.truth[nzero] <- out[[1]]
