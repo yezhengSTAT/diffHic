@@ -4,7 +4,7 @@ Date: 2015/11/22
 Title: Differential analyis of Hi-C data
 Author: Aaron Lun <alun@wehi.edu.au>
 Maintainer: Aaron Lun <alun@wehi.edu.au>
-Depends: R (>= 3.3.0), GenomicRanges, InteractionSet
+Depends: R (>= 3.3.0), GenomicRanges, InteractionSet, SummarizedExperiment
 Imports: Rsamtools, Biostrings, BSgenome, rhdf5, edgeR, limma, csaw,
         locfit, methods, IRanges, S4Vectors, GenomeInfoDb, BiocGenerics
 Suggests: BSgenome.Ecoli.NCBI.20080805

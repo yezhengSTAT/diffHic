@@ -130,7 +130,6 @@ pairParam <- function(fragments,
 	restrict
 }
 
-setGeneric("reform", function(x, ...) { standardGeneric("reform") })
 setMethod("reform", signature("pairParam"), function(x, ...) {
 	incoming <- list(...)
 	sn <- slotNames(x)
