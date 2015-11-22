@@ -83,7 +83,7 @@ data <- InteractionSet(
     matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
     GInteractions(anchor1=anchors, anchor2=targets,
         regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
-	colData=list(totals=runif(nlibs, 1e6, 2e6)), 
+	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)))
 
 # Correcting.
 stuff <- correctedContact(data)
