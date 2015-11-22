@@ -7,7 +7,7 @@ clusterPairs <- function(..., tol, upper=1e6)
 #
 # written by Aaron Lun
 # created 6 December 2013
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	tol <- as.integer(tol)
 	stopifnot(tol>=0L) # Minimum overlap not supported.
@@ -19,8 +19,8 @@ clusterPairs <- function(..., tol, upper=1e6)
 		data <- all.data[[x]]
 		region <- regions(data)
 		allchrs <- as.character(seqnames(region))
-		aid <- anchors(data, id=TRUE)
-		tid <- targets(data, id=TRUE)
+		aid <- anchors(data, type="first", id=TRUE)
+		tid <- anchors(data, type="second", id=TRUE)
 
 		achrs[[x]] <- allchrs[aid]
 		tchrs[[x]] <- allchrs[tid]
@@ -85,7 +85,7 @@ clusterPairs <- function(..., tol, upper=1e6)
 		last <- last + currows
 	}
 	names(indices) <- names(all.data)
-	return(list(indices=indices, anchors=min.box$anchors, targets=min.box$targets))
+	return(list(indices=indices, anchor1=min.box$anchors, anchor2=min.box$targets))
 }
 
 # No need to consider special behaviour beyond the diagonal.

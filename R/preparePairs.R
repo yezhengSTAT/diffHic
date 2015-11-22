@@ -5,11 +5,11 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 #
 # written by Aaron Lun
 # created 30 May 2013
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	# Preparing cuts; start positions, end positions, index in 'fragments', segmented by chromosome.
-	# Anchor/target order is defined by the order of chromosomes in 'fragments'; earlier chromosomes
-	# are designated as targets when compared to later chromosomes.
+	# Anchor order is defined by the order of chromosomes in 'fragments'; earlier chromosomes
+	# are designated as the second anchor when compared to later chromosomes.
 	scuts <- ecuts <- list()
 	boost.idx<- list()
 	fragments <- param$fragments
@@ -116,14 +116,14 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 		pairdata <- collated[[2]]
 
 		for (i in seq_len(nrow(nonempty))) {
-			anchor <- chrs[nonempty[i,1]]
-			target <- chrs[nonempty[i,2]]
-			if (is.null(allfiles[[anchor]])) { allfiles[[anchor]] <- list() }
+			anchor1 <- chrs[nonempty[i,1]]
+			anchor2 <- chrs[nonempty[i,2]]
+			if (is.null(allfiles[[anchor1]])) { allfiles[[anchor1]] <- list() }
 	
-			current.file <- allfiles[[anchor]][[target]]
+			current.file <- allfiles[[anchor1]][[anchor2]]
 			if (is.null(current.file)) {
 				current.file <- file.path(dir, paste0(file.count, ".gz"))
-				allfiles[[anchor]][[target]] <- current.file
+				allfiles[[anchor1]][[anchor2]] <- current.file
 				file.count <- file.count+1L
 			}
 	
@@ -135,21 +135,21 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 	}
 	close(bf)
 
-	# Parsing the directory, pulling out data.frames. We adjust the a/t indices to get the
-	# full values, and we sort them by anchor/target. We then save them into a HDF5 file.
+	# Parsing the directory, pulling out data.frames. We adjust the anchor indices to get the
+	# full values, and we sort them by anchor1/anchor2. We then save them into a HDF5 file.
 	.initializeH5(file)
-	for (anchor in names(allfiles)) {
-		tfiles <- allfiles[[anchor]]
+	for (anchor1 in names(allfiles)) {
+		tfiles <- allfiles[[anchor1]]
 		.addGroup(file, anchor)
-		for (target in names(tfiles)) {
-			current.file <- tfiles[[target]]
+		for (anchor2 in names(tfiles)) {
+			current.file <- tfiles[[anchor2]]
 			out <- read.table(current.file, header=FALSE, colClasses="integer")
-			colnames(out) <- c("anchor.id", "target.id", "anchor.pos", "target.pos", "anchor.len", "target.len")
-			out$anchor.id <- out$anchor.id+chr.start[[anchor]]
-			out$target.id <- out$target.id+chr.start[[target]]
-			out <- out[order(out$anchor.id, out$target.id),,drop=FALSE]
+			colnames(out) <- c("anchor1.id", "anchor2.id", "anchor1.pos", "anchor2.pos", "anchor1.len", "anchor2.len")
+			out$anchor1.id <- out$anchor1.id+chr.start[[anchor1]]
+			out$anchor2.id <- out$anchor2.id+chr.start[[anchor2]]
+			out <- out[order(out$anchor1.id, out$anchor2.id),,drop=FALSE]
 			rownames(out)<-NULL
-			.writePairs(out, file, anchor, target)
+			.writePairs(out, file, anchor1, anchor2)
 		}
 	}
 

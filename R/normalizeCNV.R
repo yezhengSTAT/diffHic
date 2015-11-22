@@ -7,7 +7,7 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 #
 # written by Aaron Lun
 # created 11 September 2014
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	cont.cor <- 0.5
 	cont.cor.scaled <- cont.cor * data$totals/mean(data$totals)
@@ -20,8 +20,8 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 	# Generating covariates.
 	mab <- cpm(counts(margins), lib.size=margins$totals, log=TRUE, prior.count=prior.count) - mave
 	matched <- matchMargins(data, margins)	
-	ma.adjc <- mab[matched$amatch,,drop=FALSE] 
-	mt.adjc <- mab[matched$tmatch,,drop=FALSE]
+	ma.adjc <- mab[matched$anchor1,,drop=FALSE] 
+	mt.adjc <- mab[matched$anchor2,,drop=FALSE]
 
 	offsets <- matrix(0, nrow=nrow(data), ncol=ncol(data))
 	for (lib in seq_len(ncol(data))) {
@@ -66,19 +66,13 @@ matchMargins <- function(data, margins)
 #
 # written by Aaron Lun
 # created 17 September 2014	
-# last modified 20 March 2015 
+# last modified 22 November 2015 
 {
 	# Checking to ensure that the regions are the same.
-	if (!identical(regions(data), regions(margins))) {
+	if (any(regions(data)!=regions(margins))) {
 		stop("regions must be the same for bin pair and marginal counts") 
 	}
-	all.indices <- integer(length(regions(data)))
-	id <- anchors(margins, id=TRUE)
-	all.indices[id] <- seq_along(id)
-	amatch <- all.indices[anchors(data, id=TRUE)]
-	if (any(amatch==0L)) { stop("non-empty anchor in data that is not in margins") }
-	tmatch <- all.indices[targets(data, id=TRUE)]
-	if (any(tmatch==0L)) { stop("non-empty target in data that is not in margins") }
-	
-	return(data.frame(amatch, tmatch))
+    anchor1 <- anchors(data, type="first", id=TRUE)
+	anchor2 <- anchors(data, type="second", id=TRUE)
+	return(data.frame(anchor1=anchor1, anchor2=anchor2))
 }	

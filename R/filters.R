@@ -20,7 +20,7 @@ filterDirect <- function(data, prior.count=2, reference=NULL)
 	}
 
 	all.chrs <- seqnames(regions(data))
-	is.inter <- as.logical(all.chrs[anchors(data, id=TRUE)]!=all.chrs[targets(data, id=TRUE)])
+	is.inter <- as.logical(all.chrs[anchors(data, type="first", id=TRUE)]!=all.chrs[anchors(data, type="second", id=TRUE)])
 	ave.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
 
 	threshold <- .getInterThreshold(all.chrs, ave.ab[is.inter],
@@ -34,7 +34,7 @@ filterDirect <- function(data, prior.count=2, reference=NULL)
 # with regionCounts where anchors are bins around probes (evenly
 # sized so treatable as bin pairs, but irregularly spaced).
 {
-	out <- exptData(data)$width
+	out <- metadata(data)$width
 	if (is.null(out)) { out <- median(width(regions(data))) }
 	return(out) 
 }
@@ -82,7 +82,7 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
 {
 	if (!is.null(reference)) {
 		actual.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
-		actual.dist <- log10(getDistance(data, type="mid") + .getBinSize(data))
+		actual.dist <- log10(pairdist(data, type="mid") + .getBinSize(data))
 		ref <- Recall(reference, span=span, prior.count=prior.count)
 		
 		new.threshold <- approx(x=ref$log.distance, y=ref$threshold, xout=actual.dist, rule=2)$y
@@ -95,7 +95,7 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
 		return(list(abundances=actual.ab, threshold=adj.thresh, log.distance=actual.dist, ref=ref)) 
 	}
 
-	dist <- getDistance(data, type="mid")
+	dist <- pairdist(data, type="mid")
 	log.dist <- log10(dist + .getBinSize(data))
 	ave.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
 
@@ -109,8 +109,8 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
  	   	warning("too many missing regions in the intra-chromosomal interaction space to fill in") 
 		trend.threshold <- loessFit(x=log.dist, y=ave.ab, span=span)$fitted
 	} else {
-		a.pts <- anchors(data, id=TRUE)[is.intra]
-		t.pts <- targets(data, id=TRUE)[is.intra]
+		a.pts <- anchors(data, type="first", id=TRUE)[is.intra]
+		t.pts <- anchors(data, type="second", id=TRUE)[is.intra]
 		o <- order(a.pts, t.pts) 
 		a.pts <- a.pts[o]
 		t.pts <- t.pts[o]
@@ -143,7 +143,7 @@ filterDiag <- function(data, by.dist=0, by.diag=0L, dist, ...)
 # created 6 October 2015
 {
 	if (missing(dist)) { 
-		dist <- getDistance(data, ...) 
+		dist <- pairdist(data, ...) 
 	} else {
 		dist <- as.numeric(dist)
 		stopifnot(length(dist)==nrow(data)) 
@@ -153,7 +153,7 @@ filterDiag <- function(data, by.dist=0, by.diag=0L, dist, ...)
 
 	by.diag <- as.integer(by.diag)
 	if (by.diag) { 
-		diag.level <- anchors(data, id=TRUE) - targets(data, id=TRUE)
+		diag.level <- pairdist(data, type="diag")
 		keep <- keep & diag.level > by.diag
 	}
 

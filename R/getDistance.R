@@ -4,10 +4,11 @@ getDistance <- function(data, type=c("mid", "gap", "span"))
 #
 # written by Aaron Lun
 # created 22 April 2014
-# last modified 24 March 2015
+# last modified 22 November 2015
 {
-	aid <- anchors(data, id=TRUE)
-	tid <- targets(data, id=TRUE)
+    .Deprecated(new="pairdist", old="getDistance")
+	aid <- anchors(data, type="first", id=TRUE)
+	tid <- anchors(data, type="second", id=TRUE)
 	st <- start(regions(data))
 	en <- end(regions(data))
 	chr <- as.character(seqnames(regions(data)))
@@ -39,10 +40,10 @@ getArea <- function(data, bp=TRUE)
 # 
 # written by Aaron Lun
 # created 30 July 2014
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
-	ax <- anchors(data, id=TRUE)
-	tx <- targets(data, id=TRUE)
+	ax <- anchors(data, type="first", id=TRUE)
+	tx <- targets(data, type="second", id=TRUE)
 	reg <- regions(data)
 
 	if (bp) {
@@ -51,7 +52,7 @@ getArea <- function(data, bp=TRUE)
 
 		# Accounting for special behaviour around the diagonal.	It you don't halve,
 		# you'll have to double every other (unreflected) area.
-		overlap <- getDistance(data, type="gap")
+		overlap <- pairdist(data, type="gap")
 		is.olap <- !is.na(overlap) & overlap < -0.5
 		lap.dist <- -overlap[is.olap]
 		self.lap.area <- lap.dist * (lap.dist - 1)/2		

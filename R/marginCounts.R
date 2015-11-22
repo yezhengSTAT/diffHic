@@ -4,8 +4,8 @@ marginCounts <- function(files, param, width=50000)
 # based on the number of Hi-C read pairs involving that region.
 #
 # written by Aaron Lun
-# Some time ago.
-# last modified 22 July 2015
+# some time ago.
+# last modified 22 November 2015
 {
 	nlibs <- length(files)
 	width <- as.integer(width)
@@ -55,9 +55,7 @@ marginCounts <- function(files, param, width=50000)
 	}
 	
 	# Aggregating all elements.
-	retained <- which(rowSums(total.counts)>0.5)
-	return(DIList(counts=total.counts[retained,,drop=FALSE], totals=full.sizes, 
-			anchors=retained, targets=retained, regions=new.pts$region, 
-			exptData=List(param=param)))
+	return(RangedSummarizedExperiment(list(counts=total.counts), colData=DataFrame(totals=full.sizes), 
+			rowRanges=new.pts$region, metadata=List(param=param)))
 }
 

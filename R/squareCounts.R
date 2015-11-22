@@ -5,7 +5,7 @@ squareCounts <- function(files, param, width=50000, filter=1L)
 #
 # written by Aaron Lun
 # some time ago
-# last modified 22 July 2015
+# last modified 22 November 2015
 {
 	nlibs <- length(files)
 	if (nlibs==0L) {
@@ -65,9 +65,8 @@ squareCounts <- function(files, param, width=50000, filter=1L)
 	out.t <- unlist(out.t)
 	out.counts <- do.call(rbind, out.counts)
 
-	return(DIList(counts=out.counts, totals=full.sizes, 
-		anchors=out.a, targets=out.t, regions=new.pts$region,
-		exptData=List(param=param, width=width)))
+	return(InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
+		anchor1=out.a, anchor2=out.t, regions=new.pts$region, metadata=List(param=param, width=width)))
 }
 
 ## PROOF:
