@@ -63,8 +63,9 @@ regions <- GRanges("chrA", IRanges(start(cuts)[rs], end(cuts)[re]))
 regions$nfrags <- re - rs + 1L
 regions <- sort(regions)
 all.combos <- combn(length(regions), 2)
-y2 <- InteractionSet(matrix(0, ncol(all.combos), 1), anchor1=all.combos[2,],
-    anchor2=all.combos[1,], regions=regions, metadata=List(param=param))
+y2 <- InteractionSet(matrix(0, ncol(all.combos), 1), 
+    GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=regions),
+    metadata=List(param=param))
 
 #### Getting areas. ####
 
