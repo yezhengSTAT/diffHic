@@ -175,7 +175,9 @@ samecomp <- function(nreads, cuts, ranges, filter=0L, type="any", restrict=NULL)
 	ref <- refline(c(dir1, dir2), cuts=cuts, ranges=ranges, filter=filter, type=type, restrict=restrict)
 	if (!identical(ref$pairs$anchor1.id, anchors(out, type="first", id=TRUE))) { stop("mismatch in anchor1 identities") }
 	if (!identical(ref$pairs$anchor2.id, anchors(out, type="second", id=TRUE))) { stop("mismatch in anchor2 identities") }
-	if (!identical(ref$counts, assay(out))) { stop("mismatch in counts") }
+    obs.counts <- assay(out)
+    dimnames(obs.counts) <- NULL
+	if (!identical(ref$counts, obs.counts)) { stop("mismatch in counts") }
 	if (!identical(ref$region, regions(out))) { stop("mismatch in region output") }	
 	if (!identical(ref$totals, out$totals) ||
 		!identical(ref$totals, totalCounts(c(dir1, dir2), param=param))) {
