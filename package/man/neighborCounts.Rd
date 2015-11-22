@@ -53,7 +53,7 @@ ref <- squareCounts(fout, param, width=50, filter=1)
 keep <- rowSums(assay(ref)) >= 2
 enriched <- enrichedPairs(ref, flank=5, prior.count=2)
 
-stopifnot(identical(ref[keep,], y$interaction))
+stopifnot(identical(anchors(ref[keep,]), anchors(y$interaction)))
 stopifnot(all(abs(enriched[keep] - y$enrichment) < 1e-6))
 
 \dontshow{
