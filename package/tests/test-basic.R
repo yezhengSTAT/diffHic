@@ -38,7 +38,6 @@ regions(data)
 data$totals
 colData(data)
 metadata(data)
-metadata(data)$param
 
 asDGEList(data)
 asDGEList(data, lib.size=20)$samples
