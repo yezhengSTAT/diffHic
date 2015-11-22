@@ -229,3 +229,7 @@ setMethod("normalize", signature("DIList"), function(object, lib.sizes, ...) {
 	normOffsets(object, lib.sizes=lib.sizes, ...)
 })
 
+DI2IS <- function(x) {
+    InteractionSet(list(counts=counts(x)), anchor1=anchors(x, id=TRUE), anchor2=targets(x, id=TRUE),
+                   colData=colData(x), regions=regions(x), metadata=exptData(x))
+}
