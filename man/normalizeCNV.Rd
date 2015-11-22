@@ -87,8 +87,8 @@ data <- InteractionSet(
         regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6))) 
 
-margins <- RangedSummarizedExperiment(matrix(rpois(npts*nlibs, 100), nrow=npts),
-	colData=DataFrame(totals=data$totals), regions=regions(data))
+margins <- SummarizedExperiment(matrix(rpois(npts*nlibs, 100), nrow=npts),
+	colData=DataFrame(totals=data$totals), rowRanges=regions(data))
 
 # Running normalizeCNV.
 head(normalizeCNV(data, margins))
