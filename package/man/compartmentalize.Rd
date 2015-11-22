@@ -78,9 +78,9 @@ nlibs <- 4
 anchors <- sample(npts, npairs, replace=TRUE)
 targets <- sample(npts, npairs, replace=TRUE)
 data <- InteractionSet(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
-   totals=runif(nlibs, 1e6, 2e6), anchor1=anchors, anchor2=targets,
-   regions=GRanges(c(rep("chrA", 80), rep("chrB", 20)), IRanges(c(1:80, 1:20), c(1:80, 1:20))),
-   exptData=List(width=1))
+    totals=runif(nlibs, 1e6, 2e6), metadata=List(width=1),
+    GInteractions(anchor1=anchors, anchor2=targets,
+    regions=GRanges(c(rep("chrA", 80), rep("chrB", 20)), IRanges(c(1:80, 1:20), c(1:80, 1:20)))))
 
 # Running compartmentalization.
 out <- compartmentalize(data)

@@ -79,9 +79,11 @@ npairs <- 5000
 nlibs <- 4
 anchors <- sample(npts, npairs, replace=TRUE)
 targets <- sample(npts, npairs, replace=TRUE)
-data <- InteractionSet(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
-	colData=list(totals=runif(nlibs, 1e6, 2e6)), anchor1=anchors, anchor2=targets,
-    regions=GRanges("chrA", IRanges(1:npts, 1:npts)))
+data <- InteractionSet(
+    matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
+    GInteractions(anchor1=anchors, anchor2=targets,
+        regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
+	colData=list(totals=runif(nlibs, 1e6, 2e6)), 
 
 # Correcting.
 stuff <- correctedContact(data)

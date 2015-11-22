@@ -62,8 +62,9 @@ regions <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 
 set.seed(3423)
 all.anchors <- sample(length(regions), 50, replace=TRUE)
 all.targets <- as.integer(runif(50, 1, all.anchors+1))
-y <- InteractionSet(matrix(0, 50, 1), anchor1=all.anchors, anchor2=all.targets, 
-    regions=regions, metadata=List(width=1))
+y <- InteractionSet(matrix(0, 50, 1), 
+    GInteractions(anchor1=all.anchors, anchor2=all.targets, regions=regions),
+    metadata=List(width=1))
 
 # Clustering; note, small tolerances are used in this toy example.
 clusterPairs(y, tol=1)
@@ -78,8 +79,9 @@ regions2 <- GRanges(rep(c("chrA", "chrB"), c(a2, b2)),
     IRanges(c(1:a2*2, 1:b2*2), c(1:a2*2, 1:b2*2)))
 all.anchors2 <- sample(length(regions2), 10, replace=TRUE)
 all.targets2 <- as.integer(runif(10, 1, all.anchors2+1))
-y2 <- InteractionSet(matrix(0, 10, 1), anchor1=all.anchors2, anchor2=all.targets2, 
-    regions=regions2, metadata=List(width=2))
+y2 <- InteractionSet(matrix(0, 10, 1), 
+    GInteractions(anchor1=all.anchors2, anchor2=all.targets2, regions=regions2), 
+    metadata=List(width=2))
 
 clusterPairs(y, y2, tol=1)
 clusterPairs(y, y2, tol=3)
