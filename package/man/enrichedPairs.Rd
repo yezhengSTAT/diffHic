@@ -99,6 +99,7 @@ all.targets <- as.integer(runif(50, 1, all.anchors+1))
 data <- InteractionSet(matrix(rnbinom(200, mu=10, size=10), 50, 4), 
     GInteractions(anchor1=all.anchors, anchor2=all.targets, 
         regions=regions), metadata=List(width=1))
+data$totals <- colSums(assay(data))
 
 # Getting peaks.
 head(enrichedPairs(data))
