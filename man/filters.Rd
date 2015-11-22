@@ -71,6 +71,7 @@ all.targets <- as.integer(runif(npairs, 1, all.anchors+1))
 y <- InteractionSet(matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4), 
     GInteractions(anchor1=all.anchors, anchor2=all.targets, regions=regions),
     metadata=List(width=1))
+y$totals <- colSums(assay(y))
 
 # Requiring at least 1.5-fold change.
 direct <- filterDirect(y)
