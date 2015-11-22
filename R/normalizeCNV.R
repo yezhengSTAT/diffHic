@@ -68,11 +68,16 @@ matchMargins <- function(data, margins)
 # created 17 September 2014	
 # last modified 22 November 2015 
 {
-	# Checking to ensure that the regions are the same.
-	if (any(regions(data)!=regions(margins))) {
-		stop("regions must be the same for bin pair and marginal counts") 
-	}
+	# Checking to ensure that the regions are the same, and matching otherwise.
     anchor1 <- anchors(data, type="first", id=TRUE)
-	anchor2 <- anchors(data, type="second", id=TRUE)
+    anchor2 <- anchors(data, type="second", id=TRUE)
+	if (any(regions(data)!=rowRanges(margins))) {
+        m <- match(regions(data), rowRanges(margins))
+        anchor1 <- m[anchor1]
+        anchor2 <- m[anchor2]
+        if (any(is.na(anchor1)) || any(is.na(anchor2))) {
+            stop("regions in 'data' missing from 'margins'")
+        }
+    }
 	return(data.frame(anchor1=anchor1, anchor2=anchor2))
 }	
