@@ -5,12 +5,9 @@ suppressPackageStartupMessages(require(diffHic))
 # Don't worry about cases involving empty files; 
 # that just shouldn't be a practical concern.
 
-ghost <- DIList(matrix(0, nrow=0, ncol=1), anchors=integer(0),
-	targets=integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5)))
-
-getDistance(ghost)
-getDistance(ghost, type="gap")
-getDistance(ghost, type="span")
+ghost <- InteractionSet(matrix(0, nrow=0, ncol=1), 
+    GInteractions(integer(0), integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5))),
+    colData=DataFrame(totals=0))
 
 getArea(ghost)
 getArea(ghost, bp=TRUE)

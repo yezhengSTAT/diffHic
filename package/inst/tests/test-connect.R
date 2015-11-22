@@ -173,8 +173,8 @@ samecomp <- function(nreads, cuts, ranges, filter=0L, type="any", restrict=NULL)
 	param <- pairParam(cuts, restrict=restrict)
 	out <- connectCounts(c(dir1, dir2), regions=ranges, filter=filter, type=type, param=param) 
 	ref <- refline(c(dir1, dir2), cuts=cuts, ranges=ranges, filter=filter, type=type, restrict=restrict)
-	if (!identical(ref$pairs$anchor.id, out@anchors)) { stop("mismatch in anchor identities") }
-	if (!identical(ref$pairs$target.id, out@targets)) { stop("mismatch in target identities") }
+	if (!identical(ref$pairs$anchor.id, out@anchor1)) { stop("mismatch in anchor1 identities") }
+	if (!identical(ref$pairs$target.id, out@anchor2)) { stop("mismatch in anchor2 identities") }
 	if (!identical(ref$counts, counts(out))) { stop("mismatch in counts") }
 	if (!identical(ref$region, regions(out))) { stop("mismatch in region output") }	
 	if (!identical(ref$totals, out$totals) ||
@@ -254,15 +254,15 @@ secondcomp <- function(nreads, cuts, ranges1, ranges2, filter=0L, type="any", re
 
 	combined <- regions(out)
 	ref <- connectCounts(c(dir1, dir2), regions=combined, filter=filter, type="within", param=param) # Need within, avoid overlap from fill-in. 
-	keep <- anchors(ref)$is.second!=targets(ref)$is.second
+	keep <- anchors(ref, type="first")$is.second!=anchors(ref, type="second")$is.second
 	ref <- ref[keep,]
 
-	if (!identical(ref@anchors, out@anchors)) { stop("mismatch in anchor identities") }
-	if (!identical(ref@targets, out@targets)) { stop("mismatch in target identities") }
+	if (!identical(ref@anchor1, out@anchor1)) { stop("mismatch in anchor identities") }
+	if (!identical(ref@anchor2, out@anchor2)) { stop("mismatch in target identities") }
 	if (!identical(counts(ref), counts(out))) { stop("mismatch in counts") }
 	if (!identical(ref$totals, out$totals)) { stop("mismatch in total output") }	
 
-	return(cbind(anchors=head(ref@anchors), targets=head(ref@targets), head(ref@counts)))
+	return(cbind(anchor1=head(ref@anchor1), anchor2=head(ref@anchor2), head(ref@counts)))
 }
 
 set.seed(234872)

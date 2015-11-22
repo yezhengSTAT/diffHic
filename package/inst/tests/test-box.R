@@ -16,9 +16,10 @@ comp <- function(reference, widths, minbox=FALSE) {
 		all.t <- as.integer(runif(n, 1, all.a))
 
 		oname <- paste0("w", w)
-		collected[[oname]] <- DIList(counts=matrix(0, nrow=n, ncol=1), totals=0, 
-			anchors=all.a, targets=all.t, regions=bindata$region, 
-			exptData=List(param=pairParam(fragments=cutted)))
+		collected[[oname]] <- InteractionSet(list(counts=matrix(0L, nrow=n, ncol=1)), 
+            colData=DataFrame(totals=100), 
+            GInteractions(anchor1=all.a, anchor2=all.t, regions=bindata$region), 
+			metadata=List(param=pairParam(fragments=cutted)))
 	}	
 
 	output<- do.call(boxPairs, c(collected, reference=reference, minbox=minbox))
@@ -28,10 +29,10 @@ comp <- function(reference, widths, minbox=FALSE) {
 		curlist <- collected[[x]]
 
 		# Checking that each bin pair is truly nested within its reported parent.
-		parent.a <- output$anchors[curdex]
-		parent.t <- output$targets[curdex]
-		current.a <- anchors(curlist)
-		current.t <- targets(curlist)
+		parent.a <- output$anchor1[curdex]
+		parent.t <- output$anchor2[curdex]
+		current.a <- anchors(curlist, type="first")
+		current.t <- anchors(curlist, type="second")
 		
 		if (! all(seqnames(parent.a)==seqnames(current.a) & start(parent.a) <= start(current.a) & end(parent.a) >= end(current.a)) ) { stop("anchor ranges not nested in parent") }
 		if (! all(seqnames(parent.t)==seqnames(current.t) & start(parent.t) <= start(current.t) & end(parent.t) >= end(current.t)) ) { stop("target ranges not nested in parent") }
@@ -39,15 +40,15 @@ comp <- function(reference, widths, minbox=FALSE) {
 
 	if (minbox) { 
 		# Checking that the minimum bounding box was correctly assigned.
-		all.anchors <- all.targets <- list()
+		all.anchor1 <- all.anchor2 <- list()
 		for (x in 1:length(output$indices)) { 
-			all.anchors[[x]] <- anchors(collected[[x]])
-			all.targets[[x]] <- targets(collected[[x]])
+			all.anchor1[[x]] <- anchor1(collected[[x]])
+			all.anchor2[[x]] <- anchor2(collected[[x]])
 		}
-		gathered.a <- unlist(range(split(do.call(c, all.anchors), unlist(output$indices))))
-		gathered.t <- unlist(range(split(do.call(c, all.targets), unlist(output$indices))))
+		gathered.a <- unlist(range(split(do.call(c, all.anchor1), unlist(output$indices))))
+		gathered.t <- unlist(range(split(do.call(c, all.anchor2), unlist(output$indices))))
 		names(gathered.a) <- names(gathered.t) <- NULL
-		if (!identical(gathered.a, output$anchors) || !identical(gathered.t, output$targets)) { stop("mismatch in bounding boxes") }
+		if (!identical(gathered.a, output$anchor1) || !identical(gathered.t, output$anchor2)) { stop("mismatch in bounding boxes") }
 	}	
 
 	return(lapply(output$indices, FUN=head))

@@ -38,8 +38,10 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 	counts <- do.call(cbind, lapply(1:nlibs, FUN=function(x) { as.integer(rpois(npairs, lambda) + 1) }) )
 	chosen <- sample(nrow(all.pairs), npairs)
 	indices <- unlist(sapply(chromos, FUN=function(x) { 1:x }), use.names=FALSE)
-	data <- DIList(counts=counts, anchors=aid[chosen], targets=tid[chosen],
-		totals=rep(1e6, nlibs), regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices)))
+	data <- InteractionSet(counts=counts, 
+        GInteractions(anchor1=aid[chosen], anchor2=tid[chosen],
+            regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices))),
+        colData=DataFrame(totals=rep(1e6, nlibs)))
 	data@regions$nfrags <- rep(1:3, length.out=nbins)
 	
 	# Computing the reference enrichment value.
@@ -48,7 +50,7 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 
 	# Sorting them by chromosome pairs.
 	all.chrs <- as.character(seqnames(regions(data)))
-	chr.pair <- paste0(all.chrs[data@anchors], ".", all.chrs[data@targets])
+	chr.pair <- paste0(all.chrs[data@anchor1], ".", all.chrs[data@anchor2])
 	by.chr.pair <- split(1:npairs, chr.pair)
 	first.id <- lapply(split(1:nbins, all.chrs), FUN=min)
 
@@ -60,8 +62,8 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 			+ log2(mean(current$totals)/1e6))
 
 		# Setting up the interaction space.
-		a.dex <- anchors(current, id=TRUE) - first.id[[two.chrs[1]]] + 1L
-		t.dex <- targets(current, id=TRUE) - first.id[[two.chrs[2]]] + 1L
+		a.dex <- anchors(current, type="first", id=TRUE) - first.id[[two.chrs[1]]] + 1L
+		t.dex <- anchors(current, type="second", id=TRUE) - first.id[[two.chrs[2]]] + 1L
 		alen <- chromos[[two.chrs[1]]]
 		tlen <- chromos[[two.chrs[2]]]
 		inter.space <- matrix(0L, nrow=alen, ncol=tlen)

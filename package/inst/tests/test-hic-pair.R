@@ -273,7 +273,7 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	stopifnot(diagnostics$chimeras[["mapped"]]==0L)
 	stopifnot(diagnostics$chimeras[["invalid"]]==0L)
 
-	# Anchor/target synchronisation is determined by order in 'fragments' (and thusly, in max.cuts).
+	# Anchor1/anchor2 synchronisation is determined by order in 'fragments' (and thusly, in max.cuts).
 	offset<-c(0L, cumsum(max.cuts))
 	names(offset)<-NULL
 	indices<-diffHic:::.loadIndices(tmpdir, seqlevels(outfrags))
@@ -288,20 +288,20 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 			sids<-frag.ids[secondary][stuff];
 			if (i > j) {
 				which.is.which<-chrs[primary][stuff]==i & chrs[secondary][stuff]==j
- 			    anchor<-ifelse(which.is.which, pids, sids)
-				target<-ifelse(which.is.which, sids, pids)
+ 			    anchor1<-ifelse(which.is.which, pids, sids)
+				anchor2<-ifelse(which.is.which, sids, pids)
 			} else {
-				anchor<-pmax(pids, sids)
-				target<-pmin(pids, sids)
+				anchor1<-pmax(pids, sids)
+				anchor2<-pmin(pids, sids)
 			}
-			anchor<-anchor+offset[i]
-			target<-target+offset[j]
+			anchor1<-anchor1+offset[i]
+			anchor2<-anchor2+offset[j]
 			totes<-frag.lens[stuff]
 			cur.ori<-orientations[stuff]
 			cur.insert<-inserts[stuff]
-			o<-order(anchor, target, totes, cur.ori, cur.insert)
+			o<-order(anchor1, anchor2, totes, cur.ori, cur.insert)
 
-			# Checking anchor/target/length/orientation/insert statistics (sorting to ensure comparability).
+			# Checking anchor1/anchor2/length/orientation/insert statistics (sorting to ensure comparability).
 			achr<-names(max.cuts)[i]
 			tchr<-names(max.cuts)[j]
 			if (!(achr%in%names(indices)) || !(tchr %in% names(indices[[achr]]))) { 
@@ -312,9 +312,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 			for (x in 1:ncol(current)) { attributes(current[,x]) <- NULL }
 			collated <- diffHic:::.getStats(current, achr==tchr, outfrags)
 			
-			o2 <- order(current$anchor.id, current$target.id, collated$length, collated$orientation, collated$insert)
-			stopifnot(identical(current$anchor.id[o2], anchor[o]))
-			stopifnot(identical(current$target.id[o2], target[o]))
+			o2 <- order(current$anchor1.id, current$anchor2.id, collated$length, collated$orientation, collated$insert)
+			stopifnot(identical(current$anchor1.id[o2], anchor1[o]))
+			stopifnot(identical(current$anchor2.id[o2], anchor2[o]))
 			stopifnot(identical(collated$length[o2], totes[o]))
 			stopifnot(identical(collated$orientation[o2], cur.ori[o]))
 			if (!identical(collated$insert[o2], cur.insert[o])) { 
@@ -351,7 +351,7 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	curdex <- curdex[curdex$otype=="H5I_DATASET",][1,]
 	returned <- h5read(tmpdir, file.path(curdex$group, curdex$name))
 	processed <- diffHic:::.getStats(returned, basename(curdex$group)==curdex$name, outfrags)
-	return(head(data.frame(anchor.id=returned$anchor.id, target.id=returned$target.id, length=processed$length,
+	return(head(data.frame(anchor1.id=returned$anchor1.id, anchor2.id=returned$anchor2.id, length=processed$length,
 		orientation=processed$orientation, insert=processed$insert)))
 }
 
@@ -453,7 +453,7 @@ printfun<-function(dir, named=NULL) {
 		for (tx in names(indices[[ax]])) {
 			extracted <- h5read(dir, file.path(ax, tx))
 			processed <- diffHic:::.getStats(extracted, ax==tx, cuts)
-			output[[ax]][[tx]] <- data.frame(anchor.id=extracted$anchor.id, target.id=extracted$target.id,
+			output[[ax]][[tx]] <- data.frame(anchor1.id=extracted$anchor1.id, anchor2.id=extracted$anchor2.id,
 				length=processed$length, orientation=processed$orientation, insert=processed$insert)
 			if (!is.null(named[[ix]])) { rownames(output[[ax]][[tx]])<-named[[ix]] }
 			ix <- ix + 1L
