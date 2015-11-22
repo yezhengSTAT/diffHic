@@ -81,12 +81,9 @@ Each object corresponds to a pair of chromosomes, designated as the anchor1 (lat
 Each row of the dataframe contains information for a read pair, with one read mapped to each chromosome. 
 The dataframe contains several integer fields:
 \describe{
-  \item{\code{anchor1.id}:}{index of the anchor1 restriction fragment}
-  \item{\code{anchor2.id}:}{index of the anchor2 restriction fragment}
-  \item{\code{anchor1.pos}:}{mapping coordinate of the read (or for chimeras, the 5' segment thereof) on the anchor1 fragment}
-  \item{\code{anchor2.pos}:}{mapping coordinate of read on the anchor2 fragment}
-  \item{\code{anchor1.len}:}{length of the alignment on the anchor1 fragment, set to a negative value if the alignment is on the reverse strand}
-  \item{\code{anchor2.len}:}{length of the alignment on the anchor2 fragment, set to a negative value if reverse stranded}
+  \item{\code{anchor1.id}, \code{anchor2.id}:}{index of the anchor1 or anchor2 restriction fragment}
+  \item{\code{anchor1.pos}, \code{anchor2.pos}:}{mapping coordinate of the read (or for chimeras, the 5' segment thereof) on the anchor1 or anchor2 fragment}
+  \item{\code{anchor1.len}, \code{anchor2.len}:}{length of the alignment on the anchor1 or anchor2 fragment, set to a negative value if the alignment is on the reverse strand}
 }
 See \code{\link{getPairData}} for more details on \code{length}, \code{orientation} and \code{gap}.  
 
