@@ -18,7 +18,7 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 	}
 
 	# Generating covariates.
-	mab <- cpm(counts(margins), lib.size=margins$totals, log=TRUE, prior.count=prior.count) - mave
+	mab <- cpm(assay(margins), lib.size=margins$totals, log=TRUE, prior.count=prior.count) - mave
 	matched <- matchMargins(data, margins)	
 	ma.adjc <- mab[matched$anchor1,,drop=FALSE] 
 	mt.adjc <- mab[matched$anchor2,,drop=FALSE]
