@@ -116,9 +116,8 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	out.counts <- do.call(rbind, out.counts)
 	anchors <- unlist(out.left)
 	targets <- unlist(out.right)
-
-	out <- InteractionSet(list(counts=out.counts[o.all,,drop=FALSE]), colData=DataFrame(totals=full.sizes), 
-		anchor1=anchors[o.all], anchor2=targets[o.all], regions=regions, metadata=List(param=param))
+	out <- InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
+		anchor1=anchors, anchor2=targets, regions=regions, metadata=List(param=param))
     return(sort(out))
 }
 

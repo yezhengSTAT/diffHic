@@ -55,7 +55,7 @@ neighborCounts <- function(files, param, width=50000, filter=1L, flank=NULL, exc
 	# Running through each pair of chromosomes.
 	overall <- .loadIndices(files, chrs, restrict)
     for (anchor1 in names(overall)) {
-        current <- overall[[anchor]]
+        current <- overall[[anchor1]]
 		for (anchor2 in names(current)) {
 			pairs <- .baseHiCParser(current[[anchor2]], files, anchor1, anchor2, 
 				chr.limits=frag.by.chr, discard=discard, cap=cap)

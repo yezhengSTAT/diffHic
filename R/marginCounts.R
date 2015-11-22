@@ -55,7 +55,7 @@ marginCounts <- function(files, param, width=50000)
 	}
 	
 	# Aggregating all elements.
-	return(RangedSummarizedExperiment(list(counts=total.counts), colData=DataFrame(totals=full.sizes), 
+	return(SummarizedExperiment(list(counts=total.counts), colData=DataFrame(totals=full.sizes), 
 			rowRanges=new.pts$region, metadata=List(param=param)))
 }
 
