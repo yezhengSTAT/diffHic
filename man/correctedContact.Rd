@@ -101,7 +101,7 @@ head(stuff$max)
 anchor1.bias <- stuff$bias[anchors(data, type="first", id=TRUE),]
 anchor2.bias <- stuff$bias[anchors(data, type="second", id=TRUE),]
 offsets <- log(anchor1.bias * anchor2.bias)
-difference <- log(stuff$truth) - (log(counts(data)) - offsets) # effective function of offset in GLMs.
+difference <- log(stuff$truth) - (log(assay(data)) - offsets) # effective function of offset in GLMs.
 stopifnot(all(is.na(difference) | difference < 1e-8))
 
 # Adjusting for distance, and computing offsets with trend correction.
@@ -111,7 +111,7 @@ head(stuff$trend)
 offsets <- log(stuff$bias[anchors(data, type="first", id=TRUE),]) +
     log(stuff$bias[anchors(data, type="second", id=TRUE),]) + 
     stuff$trend/log2(exp(1))
-difference <- log(stuff$truth) - (log(counts(data)) - offsets)
+difference <- log(stuff$truth) - (log(assay(data)) - offsets)
 stopifnot(all(is.na(difference) | difference < 1e-8))
 }
 
