@@ -7,8 +7,8 @@ getDistance <- function(data, type=c("mid", "gap", "span"))
 # last modified 22 November 2015
 {
     .Deprecated(new="pairdist", old="getDistance")
-	aid <- anchors(data, type="first", id=TRUE)
-	tid <- anchors(data, type="second", id=TRUE)
+	aid <- anchors(data, id=TRUE)
+	tid <- targets(data, id=TRUE)
 	st <- start(regions(data))
 	en <- end(regions(data))
 	chr <- as.character(seqnames(regions(data)))
