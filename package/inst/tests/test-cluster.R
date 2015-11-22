@@ -63,6 +63,7 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 
 	# Simulating cluster formation first, by expanding each region and checking for overlaps.
 	# We use a simple quadratic-time algorithm; slow, but gets the job done.
+    gi <- interactions(data)
 	region <- regions(data)
 	np <- nrow(data)
 	expanded <- resize(region, fix="center", width(region)+tol*2)
@@ -73,20 +74,20 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 	last.id <- 1L
 
 	for (x in 1:np) {
-		cura <- data@anchor1[x]
+		cura <- gi@anchor1[x]
 		keep.a <- subjectHits(allap)[queryHits(allap)==cura]
-		curt <- data@anchor2[x]
+		curt <- gi@anchor2[x]
 		keep.t <- subjectHits(allap)[queryHits(allap)==curt]
 
 #		has.nested.a<- subjectHits(nested)[queryHits(nested)==cura & subjectHits(nested)!=cura] 
 #		has.nested.t <- subjectHits(nested)[queryHits(nested)==curt & subjectHits(nested)!=curt] 
-#		anchor1.nested <- data@anchor1 %in% has.nested.a
-#		anchor2.nested <- data@anchor2 %in% has.nested.t
-#		if (any(anchor1.nested & data@anchor2 %in% keep.t)) { cat("Hooray, nested anchor!\n") }
-#		if (any(data@anchor1 %in% keep.a & anchor2.nested)) { cat("Hooray, nested target!\n") }
+#		anchor1.nested <- gi@anchor1 %in% has.nested.a
+#		anchor2.nested <- gi@anchor2 %in% has.nested.t
+#		if (any(anchor1.nested & gi@anchor2 %in% keep.t)) { cat("Hooray, nested anchor!\n") }
+#		if (any(gi@anchor1 %in% keep.a & anchor2.nested)) { cat("Hooray, nested target!\n") }
 #		if (any(anchor1.nested & anchor2.nested)) { cat("Hooray, nested both!\n") }
 
-		partners <- which(data@anchor1 %in% keep.a & data@anchor2 %in% keep.t)
+		partners <- which(gi@anchor1 %in% keep.a & gi@anchor2 %in% keep.t)
 		partners <- partners[partners>=x]
 		curids <- myids[partners]
 		curids <- curids[curids!=impossible]
@@ -124,8 +125,8 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 	myid2 <- myids
 	for (x in names(clusters)) {
 		active <- clusters[[x]]
-		active.a <- data@anchor1[active]
-		active.t <- data@anchor2[active]
+		active.a <- gi@anchor1[active]
+		active.t <- gi@anchor2[active]
 
 		cluster.as <- min(all.starts[active.a])
 		cluster.ae <- max(all.ends[active.a])
