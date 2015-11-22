@@ -81,10 +81,13 @@ npairs <- 5000
 nlibs <- 4
 anchors <- sample(npts, npairs, replace=TRUE)
 targets <- sample(npts, npairs, replace=TRUE)
-data <- InteractionSet(list(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs)),
-	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)), regions=GRanges("chrA", IRanges(1:npts, 1:npts)),
-    anchor1=anchors, anchor2=targets)
-margins <- RangedSummarizedExperiment(list(counts=matrix(rpois(npts*nlibs, 100), nrow=npts)),
+data <- InteractionSet(
+    matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
+    GInteractions(anchor1=anchors, anchor2=targets, 
+        regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
+	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6))) 
+
+margins <- RangedSummarizedExperiment(matrix(rpois(npts*nlibs, 100), nrow=npts),
 	colData=DataFrame(totals=data$totals), regions=regions(data))
 
 # Running normalizeCNV.
@@ -94,8 +97,9 @@ head(normalizeCNV(data, margins, span=0.5))
 
 # Occasionally locfit will complain; increase maxk to compensate.
 data <- InteractionSet(counts=matrix(rpois(npairs*nlibs, 20), nrow=npairs),
-	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6), regions=GRanges("chrA", IRanges(1:npts, 1:npts)),
-    anchor1=anchors, anchor2=targets)
+    GInteractions(anchor1=anchors, anchor2=targets,
+        regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
+	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)))
 tryCatch(head(normalizeCNV(data, margins, maxk=100)), error=function(e) e)
 head(normalizeCNV(data, margins, maxk=1000))
 

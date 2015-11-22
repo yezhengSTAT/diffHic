@@ -68,8 +68,9 @@ regions <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 
 set.seed(3423)
 all.anchors <- sample(length(regions), 500, replace=TRUE)
 all.targets <- as.integer(runif(500, 1, all.anchors+1))
-out <- InteractionSet(matrix(0, 500, 1), anchor1=all.anchors, anchor2=all.targets, 
-    regions=regions, metadata=List(width=1))
+out <- InteractionSet(matrix(0, 500, 1), 
+    GInteractions(anchor1=all.anchors, anchor2=all.targets, 
+        regions=regions), metadata=List(width=1))
 fc <- runif(nrow(out), -2, 2)
 
 # Constructing intra-chromosomal DI plots around various regions
