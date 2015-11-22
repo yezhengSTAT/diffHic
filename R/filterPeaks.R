@@ -77,8 +77,9 @@ filterPeaks <- function(data, enrichment, min.enrich=log2(1.5), min.count=5, min
 {
 	keep <- enrichment > min.enrich 
 	if (!is.null(min.count)) { 
-		ab <- aveLogCPM(asDGEList(data), ...)
-		keep <- keep & ab > aveLogCPM(min.count, lib.size=mean(data$totals), ...)
+        y <- asDGEList(data)
+		ab <- aveLogCPM(y, ...)
+		keep <- keep & ab > aveLogCPM(min.count, lib.size=mean(y$samples$lib.size), ...)
 	} 
 	if (!is.null(min.diag)) {
         cur.dist <- pairdist(data, type="diag")  
