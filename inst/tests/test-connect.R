@@ -259,7 +259,7 @@ secondcomp <- function(nreads, cuts, ranges1, ranges2, filter=0L, type="any", re
 	keep <- anchors(ref, type="first")$is.second!=anchors(ref, type="second")$is.second
 	ref <- ref[keep,]
 
-	if (!identical(regions(ref), regions(out))) { stop("mismatch in regions") }
+	if (!all(regions(ref)==regions(out))) { stop("mismatch in regions") }
 	if (!identical(anchors(ref, id=TRUE, type="first"), anchors(out, id=TRUE, type="first"))) { stop("mismatch in anchor1 identities") }
 	if (!identical(anchors(ref, id=TRUE, type="second"), anchors(out, id=TRUE, type="second"))) { stop("mismatch in anchor2 identities") }
 	if (!identical(assay(ref), assay(out))) { stop("mismatch in counts") }
