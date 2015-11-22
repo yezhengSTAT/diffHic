@@ -98,7 +98,7 @@ all.anchors <- sample(length(regions), 50, replace=TRUE)
 all.targets <- as.integer(runif(50, 1, all.anchors+1))
 data <- Interaction(matrix(rnbinom(200, mu=10, size=10), 50, 4), 
     GInteractions(anchor1=all.anchors, anchor2=all.targets, 
-    regions=regions), metadata=List(width=1))
+        regions=regions), metadata=List(width=1))
 
 # Getting peaks.
 head(enrichedPairs(data))
