@@ -11,8 +11,8 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 {
 	cont.cor <- 0.5
 	cont.cor.scaled <- cont.cor * data$totals/mean(data$totals)
-	ab <- aveLogCPM(counts(data), lib.size=data$totals, prior.count=cont.cor)
-	mave <- aveLogCPM(counts(margins), lib.size=margins$totals, prior.count=prior.count)
+	ab <- aveLogCPM(assay(data), lib.size=data$totals, prior.count=cont.cor)
+	mave <- aveLogCPM(assay(margins), lib.size=margins$totals, prior.count=prior.count)
 	if (!identical(margins$totals, data$totals)) { 
 		warning("library sizes should be identical for margin and data objects")
 	}
@@ -35,7 +35,7 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 		all.cov <- list(mfc1, mfc2, ab)
 	
 		# Fitting a loess surface with the specified covariates.	
-		i.fc <- log2(counts(data)[,lib] + cont.cor.scaled[lib]) - ab 
+		i.fc <- log2(assay(data)[,lib] + cont.cor.scaled[lib]) - ab 
 		cov.fun <- do.call(lp, c(all.cov, nn=span, deg=1))
 		fit <- locfit(i.fc ~ cov.fun, maxk=maxk, ..., lfproc=locfit.robust) 
 		offsets[,lib] <- fitted(fit)
