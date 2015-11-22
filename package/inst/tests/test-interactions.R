@@ -155,7 +155,7 @@ comp<-function(npairs1, npairs2, dist, cuts, filter=1L, restrict=NULL, cap=NA) {
 	ar <- anchors(y, type="first")
 	tr <- anchors(y, type="second")
 	if (nrow(y)) {
-		overall<-data.frame(counts(y), paste0(as.character(seqnames(ar)), ":", start(ar), "-", end(ar)),
+		overall<-data.frame(assay(y), paste0(as.character(seqnames(ar)), ":", start(ar), "-", end(ar)),
 			paste0(as.character(seqnames(tr)), ":", start(tr), "-", end(tr)), stringsAsFactors=FALSE)
 	} else {
 		overall <- data.frame(integer(0), integer(0), character(0), character(0), numeric(0),
