@@ -29,6 +29,9 @@ exportMethods(
 	asDGEList, normOffsets, reform
     , normalize
 )
+# asDGEList, normOffsets and normalize can be shuffled 
+# into 'exports' when the DIList objects are finally removed,
+# to ensure that they are accessible to the user.
 
 # Requires several imports.
 import(Rsamtools,GenomicRanges,Biostrings,BSgenome,rhdf5,
