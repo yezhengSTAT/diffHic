@@ -32,8 +32,8 @@ In most cases, these can be generated using the \code{\link{cutGenome}} function
 If, for any reason, a modified genome is used for alignment, then the coordinates of the restriction fragments on the modified genome are required.
 
 Each read pair subsequently becomes associated with a pair of restriction fragments.
-The anchor fragment is that with the higher genomic coordinate, i.e., the larger index in \code{param$fragments}.
-The target fragment is that with the smaller coordinate/index. 
+The anchor1 fragment is that with the higher genomic coordinate, i.e., the larger index in \code{param$fragments}.
+The anchor2 fragment is that with the smaller coordinate/index. 
 This definition avoids the need to consider both permutations of indices in a pair during downstream processing.
 }
 
@@ -77,16 +77,16 @@ Reads will not be discarded if they lie outside the specified chromosomes, or if
 
 \value{
 Multiple dataframe objects are stored within the specified \code{file} using the HDF5 format.
-Each object corresponds to a pair of anchor/target chromosomes.
+Each object corresponds to a pair of chromosomes, designated as the anchor1 (later) or anchor2 (earlier) chromosome based on the order of their names.
 Each row of the dataframe contains information for a read pair, with one read mapped to each chromosome. 
 The dataframe contains several integer fields:
 \describe{
-  \item{\code{anchor.id}:}{index of the anchor restriction fragment}
-  \item{\code{target.id}:}{index of the target restriction fragment}
-  \item{\code{anchor.pos}:}{mapping coordinate of the read (or for chimeras, the 5' segment thereof) on the anchor fragment}
-  \item{\code{target.pos}:}{mapping coordinate of read on the target fragment}
-  \item{\code{anchor.len}:}{length of the alignment on the anchor fragment, set to a negative value if the alignment is on the reverse strand}
-  \item{\code{target.len}:}{length of the alignment on the target fragment, set to a negative value if reverse stranded}
+  \item{\code{anchor1.id}:}{index of the anchor1 restriction fragment}
+  \item{\code{anchor2.id}:}{index of the anchor2 restriction fragment}
+  \item{\code{anchor1.pos}:}{mapping coordinate of the read (or for chimeras, the 5' segment thereof) on the anchor1 fragment}
+  \item{\code{anchor2.pos}:}{mapping coordinate of read on the anchor2 fragment}
+  \item{\code{anchor1.len}:}{length of the alignment on the anchor1 fragment, set to a negative value if the alignment is on the reverse strand}
+  \item{\code{anchor2.len}:}{length of the alignment on the anchor2 fragment, set to a negative value if reverse stranded}
 }
 See \code{\link{getPairData}} for more details on \code{length}, \code{orientation} and \code{gap}.  
 

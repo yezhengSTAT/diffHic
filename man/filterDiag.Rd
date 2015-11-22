@@ -9,7 +9,7 @@ filterDiag(data, by.dist=0, by.diag=0L, dist, ...)
 }
 
 \arguments{
-\item{data}{a \code{DIList} object produced by \code{\link{squareCounts}}}
+\item{data}{an InteractionSet object produced by \code{\link{squareCounts}}}
 \item{by.dist}{a numeric scalar indicating the base-pair distance threshold below which bins are considered local}
 \item{by.diag}{an integer scalar indicating the bin distance threshold below which bins are considered local}
 \item{dist}{a optional numeric vector containing pre-computed distances}
@@ -40,7 +40,7 @@ A logical vector indicating whether each bin pair in \code{data} is a non-diagon
 }
 
 \seealso{
-\code{\link{getDistance}}
+\code{\link[InteractionSet]{pairdist}}
 }
 
 \author{

@@ -10,6 +10,9 @@
 
 \description{
 Convenience wrappers for statistical routines operating on DIList objects.
+
+\bold{NOTE:} These methods are all deprecated, along with the DIList class itself.
+Users can apply the same methods to InteractionSet objects.
 }
 
 \usage{

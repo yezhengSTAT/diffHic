@@ -21,7 +21,8 @@ neighborCounts(files, param, width=50000, filter=1L, flank=NULL,
 }
 
 \value{
-A list object is returned containing \code{interaction}, a \code{DIList} object with the number of read pairs for each bin pair across all libraries; and \code{enrichment}, a numeric vector of enrichment statistics for each bin pair in \code{interaction}.
+A list object is returned containing \code{interaction}, a InteractionSet object with the number of read pairs for each bin pair across all libraries; 
+    and \code{enrichment}, a numeric vector of enrichment statistics for each bin pair in \code{interaction}.
 }
 
 \details{

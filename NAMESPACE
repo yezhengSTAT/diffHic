@@ -15,7 +15,9 @@ export(diffHicUsersGuide,
 	filterPeaks, enrichedPairs, neighborCounts,
     boxPairs, clusterPairs, consolidatePairs,
 	compartmentalize, domainDirections,
-    plotPlaid, rotPlaid, plotDI, rotDI)
+    plotPlaid, rotPlaid, plotDI, rotDI,
+    DI2IS
+)
 
 # Exporting the DIList class.
 exportClasses(

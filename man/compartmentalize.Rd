@@ -10,7 +10,7 @@ compartmentalize(data, centers=2, dist.correct=TRUE,
 }
 
 \arguments{
-\item{data}{a \code{DIList} object containing bin pair data, like that produced by \code{\link{squareCounts}}}
+\item{data}{an InteractionSet object containing bin pair data, like that produced by \code{\link{squareCounts}}}
 \item{centers}{an integer scalar, specifying the number of clusters to form in \code{\link{kmeans}}}
 \item{dist.correct}{a logical scalar, indicating whether abundances should be corrected for distance biases}
 \item{cov.correct}{a logical scalar, indicating whether abundances should be corrected for coverage biases}
@@ -77,8 +77,8 @@ npairs <- 5000
 nlibs <- 4
 anchors <- sample(npts, npairs, replace=TRUE)
 targets <- sample(npts, npairs, replace=TRUE)
-data <- DIList(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
-   totals=runif(nlibs, 1e6, 2e6), anchors=pmax(anchors, targets), targets=pmin(anchors, targets),
+data <- InteractionSet(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
+   totals=runif(nlibs, 1e6, 2e6), anchor1=anchors, anchor2=targets,
    regions=GRanges(c(rep("chrA", 80), rep("chrB", 20)), IRanges(c(1:80, 1:20), c(1:80, 1:20))),
    exptData=List(width=1))
 
