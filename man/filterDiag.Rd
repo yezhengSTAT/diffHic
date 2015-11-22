@@ -62,7 +62,7 @@ y <- squareCounts(fout, param, width=50, filter=1)
 summary(filterDiag(y))
 summary(filterDiag(y, by.dist=100))
 summary(filterDiag(y, by.diag=1))
-summary(filterDiag(y, dist=getDistance(y)))
+summary(filterDiag(y, dist=pairdist(y)))
 
 \dontshow{
 unlink(fout, recursive=TRUE)
