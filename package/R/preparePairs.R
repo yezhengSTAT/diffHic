@@ -140,7 +140,7 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 	.initializeH5(file)
 	for (anchor1 in names(allfiles)) {
 		tfiles <- allfiles[[anchor1]]
-		.addGroup(file, anchor)
+		.addGroup(file, anchor1)
 		for (anchor2 in names(tfiles)) {
 			current.file <- tfiles[[anchor2]]
 			out <- read.table(current.file, header=FALSE, colClasses="integer")
