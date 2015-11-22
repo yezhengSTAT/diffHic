@@ -54,7 +54,7 @@ correctedContact <- function(data, iterations=50, exclude.local=1, ignore.low=0.
 			ave.counts <- exp(edgeR::mglmOneGroup(assay(data), offset=log.lib - mean(log.lib)))
 			nzero <- !is.na(ave.counts)
 		} else {
-			nzero <- counts(data) != 0L
+			nzero <- assay(data) != 0L
 			ave.counts <- as.double(assay(data))
 		}
 	}
