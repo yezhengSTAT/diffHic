@@ -48,7 +48,7 @@ correctedContact <- function(data, iterations=50, exclude.local=1, ignore.low=0.
 		is.local <- !is.na(trended$log.distance)
 		nzero <- !is.na(ave.counts)
 	} else {
-		is.local <- !is.na(getDistance(data))
+		is.local <- intrachr(data)
    		log.lib <- log(data$totals)
 		if (length(log.lib)>1L) {
 			ave.counts <- exp(edgeR::mglmOneGroup(counts(data), offset=log.lib - mean(log.lib)))
