@@ -72,10 +72,9 @@ setMethod("[", "DIList", function(x, i, j, ..., drop=TRUE) {
 })
 
 # Some getters. No need for setters, really.
-setGeneric("anchors", function(object, ...) { standardGeneric("anchors") })
-setMethod("anchors", signature("DIList"), function(object, id=FALSE) {
-	if (id) { return(object@anchors) }
-	object@regions[object@anchors]
+setMethod("anchors", signature("DIList"), function(x, id=FALSE) {
+	if (id) { return(x@anchors) }
+	x@regions[x@anchors]
 })
 
 setGeneric("targets", function(object, ...) { standardGeneric("targets") })
@@ -89,9 +88,8 @@ setMethod("counts", signature("DIList"), function(object) {
 	object@counts
 })
 
-setGeneric("regions", function(object) { standardGeneric("regions") })
-setMethod("regions", signature("DIList"), function(object) {
-	object@regions
+setMethod("regions", signature("DIList"), function(x) {
+	x@regions
 })
 
 setMethod("dim", signature("DIList"), function(x) {
