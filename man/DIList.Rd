@@ -165,42 +165,4 @@ In the code snippets below, \code{x} is a DIList object.
 
 \author{Aaron Lun}
 
-\examples{
-blah <- DIList(counts=matrix(c(1,1,2,2,3,3,4,4,5,5,6,6), ncol=2), 
-    totals=c(10L, 10L), anchors=c(1,2,3,4,5,6), targets=c(1,1,2,2,3,3), 
-	regions=GRanges("chrA", IRanges(1:6*10, 1:6*10+9)))
-nrow(blah)
-ncol(blah)
-
-blah
-blah[1,]
-blah[,2]
-blah[1:2,2]
-
-anchors(blah)
-anchors(blah, id=TRUE)
-targets(blah)
-targets(blah, id=TRUE)
-counts(blah)
-regions(blah)
-
-blah$totals
-colData(blah)
-exptData(blah)
-
-blah$totals <- c(10L, 20L)
-exptData(blah)$width <- 5
-exptData(blah)
-
-c(blah, blah)
-c(blah[1:2,], blah[3:4,], add.totals=FALSE)
-
-as.matrix(blah, anchor="chrA")
-as.matrix(blah, fill=runif(nrow(blah)))
-}
-
-\seealso{
-\code{\link{squareCounts}}
-}
-
 \keyword{counting}
