@@ -3,7 +3,11 @@
 
 \title{Get the linear distance for each interaction}
 
-\description{Compute the distance between interacting regions on the linear genome.}
+\description{
+Compute the distance between interacting regions on the linear genome.
+
+\bold{NOTE:} This function is deprecated in favour of the \code{pairdist} function from the InteractionSet package.
+}
 
 \usage{
 getDistance(data, type=c("mid", "gap", "span"))

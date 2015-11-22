@@ -28,10 +28,16 @@
 \alias{c,DIList-method}
 \alias{as.matrix,DIList-method}
 
+\alias{DI2IS}
+
 \title{DIList class and methods}
 
 \description{
 Using the DIList class to store pairwise genomic interactions.
+
+\bold{NOTE:} this class has been deprecated in favour of the InteractionSet class from the InteractionSet package.
+Users should use InteractionSet objects for future work.
+Existing DIList objects can be converted into InteractionSet objects using the DI2IS function. 
 }
 
 \details{
