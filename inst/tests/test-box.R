@@ -42,8 +42,8 @@ comp <- function(reference, widths, minbox=FALSE) {
 		# Checking that the minimum bounding box was correctly assigned.
 		all.anchor1 <- all.anchor2 <- list()
 		for (x in 1:length(output$indices)) { 
-			all.anchor1[[x]] <- anchor1(collected[[x]])
-			all.anchor2[[x]] <- anchor2(collected[[x]])
+			all.anchor1[[x]] <- anchors(collected[[x]], type="first")
+			all.anchor2[[x]] <- anchors(collected[[x]], type="second")
 		}
 		gathered.a <- unlist(range(split(do.call(c, all.anchor1), unlist(output$indices))))
 		gathered.t <- unlist(range(split(do.call(c, all.anchor2), unlist(output$indices))))
