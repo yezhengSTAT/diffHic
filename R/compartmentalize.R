@@ -21,7 +21,7 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	# Going chromosome-by-chromosome.
 	stored <- list()
 	for (chr in seqlevels(regions(data))) {
-		mat <- inflate(data, first=chr, second=chr, fill=contacts)
+		mat <- inflate(data, rows=chr, columns=chr, fill=contacts)
 		stored[[chr]] <- .compartChr(as.matrix(mat), data, dist2trend, robust.cov, cov.correct, centers, ...)
 	}
 
