@@ -43,7 +43,7 @@ getArea <- function(data, bp=TRUE)
 # last modified 22 November 2015
 {
 	ax <- anchors(data, type="first", id=TRUE)
-	tx <- targets(data, type="second", id=TRUE)
+	tx <- anchors(data, type="second", id=TRUE)
 	reg <- regions(data)
 
 	if (bp) {
