@@ -50,7 +50,7 @@ y$enrichment
 
 # Practically identical to a more memory-intensive call.
 ref <- squareCounts(fout, param, width=50, filter=1)
-keep <- rowSums(counts(ref)) >= 2
+keep <- rowSums(assay(ref)) >= 2
 enriched <- enrichedPairs(ref, flank=5, prior.count=2)
 
 stopifnot(identical(ref[keep,], y$interaction))
