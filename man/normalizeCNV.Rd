@@ -96,7 +96,7 @@ head(normalizeCNV(data, margins, prior.count=1))
 head(normalizeCNV(data, margins, span=0.5))
 
 # Occasionally locfit will complain; increase maxk to compensate.
-data <- InteractionSet(counts=matrix(rpois(npairs*nlibs, 20), nrow=npairs),
+data <- InteractionSet(matrix(rpois(npairs*nlibs, 20), nrow=npairs),
     GInteractions(anchor1=anchors, anchor2=targets,
         regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)))
