@@ -66,7 +66,8 @@ squareCounts <- function(files, param, width=50000, filter=1L)
 	out.counts <- do.call(rbind, out.counts)
 
 	return(InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
-		anchor1=out.a, anchor2=out.t, regions=new.pts$region, metadata=List(param=param, width=width)))
+		interactions=GInteractions(anchor1=out.a, anchor2=out.t, regions=new.pts$region), 
+        metadata=List(param=param, width=width)))
 }
 
 ## PROOF:
