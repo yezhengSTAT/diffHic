@@ -76,7 +76,7 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	if (any(is.na(matched))) { stop("chromosome present in regions and not in fragments") }
 
 	nregs <- length(regions)
-	o <- order(matched, start(regions), end(regions), 1:nregs) # Preserve order, if expanded intervals are identical.
+	o <- order(matched, start(regions), end(regions)) # Stable sort preserves order, if expanded intervals are identical.
 	regions <- regions[o]
 
 	ranked <- integer(nregs)
