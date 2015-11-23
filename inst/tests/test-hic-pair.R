@@ -106,12 +106,17 @@ suppressPackageStartupMessages(require("rhdf5"))
 source("simsam.R")
 
 comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, spacer=rlen, 
-		yield=max(1L, round(npairs/runif(1, 2, 10)))) {
+		yield=max(1L, round(npairs/runif(1, 2, 10))), pseudo=FALSE) {
 	rlen<-as.integer(rlen)
 	spacer<-as.integer(spacer)
 	if (min(sizes) <= rlen) { stop("min fragment must be greater than read length") } 
 	# Necessary for proper assignment, especially at the start of the chromosome when reverse 
 	# reads are bounded at zero (i.e. their 5' ends would not be defined if 1+rlen > fragmentsize)
+
+	if (pseudo) {
+		stopifnot(sizes[1]==sizes[2])
+		stopifnot(spacer == 0L)
+	}
 
 	# Randomly generating fragment lengths for the chromosome.
 	fragments<-list()
@@ -159,6 +164,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 					ifelse(forward.frag!=length(cut.starts[[i]]),
 						cut.starts[[i]][forward.frag+1L],
 						my.ends[forward.frag])))
+			# Note that as.integer(runif(1, a, b)) samples from [a, b), as runif() will never actually generate 'b'.
+			# So, this will only generate positions after and including the start position for the chosen fragment,
+			# but before and not including the start position for the next fragment (or 1-past the end of the chromosome).
 			
 			reverse.frag <- chosen.frags[!cur.for]
 			starter <- integer(sum(!cur.for))
@@ -167,8 +175,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 			starter[!possible.zero] <- my.ends[reverse.frag[!possible.zero]-1L] 
 			pos[current][!cur.for] <- pmax(1L, 
 				as.integer(runif(sum(!cur.for), starter, my.ends[chosen.frags[!cur.for]])) - rlen + 1L)
-			# The boundary conditions here are tricky, but because runif will never generate values
-			# equal to the boundary, rounding down will always ensure a position in the correct fragment.
+			# Recall that the 'ends' are 1-past the last base of the fragment, so this runif() will sample from 
+			# the first non-overlapping base of the current fragment to the last base of the current fragment
+			# (it's [a, b), so when b is 1-past the last base, sampling will include the last base).
 		}
     }
 
@@ -260,18 +269,24 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 
 	tmpdir<-paste0(fname, "_temp")
 	param <- pairParam(fragments=outfrags)
-	diagnostics <- preparePairs(out, param, tmpdir, yield=yield);
-   	
-	stopifnot(sum(codes==1L)==diagnostics$same.id[["dangling"]])
-	stopifnot(sum(codes==3L)==diagnostics$same.id[["self.circle"]])
-	stopifnot(length(codes)==diagnostics$pairs[["total"]])
-	stopifnot(singles==diagnostics$singles)
+	if (pseudo) {
+		# Special behaviour; faster assignment into bins, no removal of dangling ends/self-cirlces
+		# (as these concepts are meaningless for arbitrary bins).
+		diagnostics <- prepPseudoPairs(out, param, tmpdir, yield=yield)
+	} else {
+		diagnostics <- preparePairs(out, param, tmpdir, yield=yield)
+		
+		stopifnot(sum(codes==1L)==diagnostics$same.id[["dangling"]])
+		stopifnot(sum(codes==3L)==diagnostics$same.id[["self.circle"]])
+		stopifnot(length(codes)==diagnostics$pairs[["total"]])
+		stopifnot(singles==diagnostics$singles)
 
-	# No support for testing chimeras, we use a fixed example below.
-	stopifnot(diagnostics$unmapped.chimeras==0L) 
-	stopifnot(diagnostics$chimeras[["total"]]==0L)
-	stopifnot(diagnostics$chimeras[["mapped"]]==0L)
-	stopifnot(diagnostics$chimeras[["invalid"]]==0L)
+		# No support for testing chimeras, we use a fixed example below.
+		stopifnot(diagnostics$unmapped.chimeras==0L) 
+		stopifnot(diagnostics$chimeras[["total"]]==0L)
+		stopifnot(diagnostics$chimeras[["mapped"]]==0L)
+		stopifnot(diagnostics$chimeras[["invalid"]]==0L)
+	}
 
 	# Anchor1/anchor2 synchronisation is determined by order in 'fragments' (and thusly, in max.cuts).
 	offset<-c(0L, cumsum(max.cuts))
@@ -283,7 +298,7 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	for (i in 1:length(max.cuts)) {
 		for (j in 1:i) {
 			stuff<-(chrs[primary]==i & chrs[secondary]==j) | (chrs[primary]==j & chrs[secondary]==i) 
-			stuff<-stuff & (codes==0L | codes==2L)
+			if (!pseudo) { stuff<-stuff & (codes==0L | codes==2L) }
 			pids<-frag.ids[primary][stuff];
 			sids<-frag.ids[secondary][stuff];
 			if (i > j) {
@@ -336,7 +351,11 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	if (!is.null(unlist(used))) { stop("objects left unused in the directory") }
 
 	# Length insert and orientation checking.
-	keepers<-codes==0L | codes==2L
+	if (!pseudo) { 
+		keepers<-codes==0L | codes==2L
+	} else { 
+		keepers <- !logical(length(codes)) 
+	}
 	valid.len<-frag.lens[keepers]
 	valid.insert<-inserts[keepers]
 	valid.ori<-orientations[keepers]
@@ -419,6 +438,15 @@ comp(fname, npairs=200, size=c(500, 1000), max.cuts=max.cuts);
 comp(fname, npairs=1000, size=c(50, 100), max.cuts=max.cuts);
 comp(fname, npairs=200, size=c(100, 500), max.cuts=max.cuts);
 comp(fname, npairs=1000, size=c(200, 300), max.cuts=max.cuts);
+
+# Checking results with pseudo-ness
+
+max.cuts<-c(chrA=20L, chrB=10L, chrC=5L)
+comp(fname, npairs=20, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=50, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=100, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=100, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(200, 200))
+comp(fname, npairs=1000, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(500, 500))
 
 ###################################################################################################
 # Trying to do simulations with chimeras is hellishly complicated, so we're just going to settle for 
