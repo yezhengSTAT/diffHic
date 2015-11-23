@@ -61,7 +61,7 @@ However, those in the second set can be distinguished with the \code{is.second} 
 Each \code{original} index will also point towards the corresponding entry in the original \code{second.regions} when \code{is.second=TRUE}.
 Similarly, if \code{is.second=FALSE}, the index will point towards the corresponding entry in the original \code{regions}.
 
-Note that this function does \emph{not} guarantee that the second set of regions will be present as the anchor or target regions.
+Note that this function does \emph{not} guarantee that the second set of regions will be treated as the second anchor region (or the first) for each interaction.
 Those definitions are dependent on the sorting order of the coordinates for all regions.
 Users should use the \code{is.second} field to identify the region from the second set in each interaction.
 }

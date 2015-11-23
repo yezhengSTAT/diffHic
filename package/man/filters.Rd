@@ -66,10 +66,10 @@ regions <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 
 
 set.seed(138153)
 npairs <- 500
-all.anchors <- sample(length(regions), npairs, replace=TRUE)
-all.targets <- as.integer(runif(npairs, 1, all.anchors+1))
+all.anchor1 <- sample(length(regions), npairs, replace=TRUE)
+all.anchor2 <- as.integer(runif(npairs, 1, all.anchor1+1))
 y <- InteractionSet(matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4), 
-    GInteractions(anchor1=all.anchors, anchor2=all.targets, regions=regions),
+    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions),
     metadata=List(width=1))
 y$totals <- colSums(assay(y))
 
@@ -87,13 +87,13 @@ y[keep,]
 w <- 5L
 a2 <- a/w
 b2 <- b/w
-regions2 <- GRanges(rep(c("chrA", "chrB"), c(a2, b2)), 
+rep.regions <- GRanges(rep(c("chrA", "chrB"), c(a2, b2)), 
     IRanges(c(1:a2, 1:b2)*w-w+1L, c(1:a2, 1:b2)*w))
 npairs2 <- 20
-all.anchors2 <- sample(length(regions2), npairs2, replace=TRUE)
-all.targets2 <- as.integer(runif(npairs2, 1, all.anchors2+1))
+rep.anchor1 <- sample(length(rep.regions), npairs2, replace=TRUE)
+rep.anchor2 <- as.integer(runif(npairs2, 1, rep.anchor1+1))
 y2 <- InteractionSet(matrix(rnbinom(npairs2*4, mu=10*w^2, size=10), npairs2, 4), 
-    GInteractions(anchor1=all.anchors2, anchor2=all.targets2, regions=regions2), 
+    GInteractions(anchor1=rep.anchor1, anchor2=rep.anchor2, regions=rep.regions), 
     colData=DataFrame(totals=y$totals), metadata=List(width=w))
 
 direct2 <- filterDirect(y, reference=y2)

@@ -33,7 +33,7 @@ Otherwise, the behavior of the function will not be clearly defined.
 
 In the output, one vector will be present in \code{indices} for each input InteractionSet in the ellipsis.
 In each vector, each entry represents an index for a single input bin pair in the corresponding InteractionSet.
-This index points to the entries in \code{anchors} and \code{targets} that specify the coordinates of the parent bin pair.
+This index points to the entries in \code{anchor1} and \code{anchor2} that specify the coordinates of the parent bin pair.
 Thus, bin pairs with the same index are nested in the same parent.
 
 Some users may wish to identify bin pairs in one InteractionSet that are nested within bin pairs in another InteractionSet.
@@ -41,7 +41,7 @@ This can be done by supplying both InteractionSet objects in the ellipsis, and l
 The value of \code{reference} will be automatically selected as the largest width of the supplied InteractionSet objects.
 Nesting can be identified by \code{\link{match}}ing the output indices for the smaller bin pairs to those of the larger bin pairs.
 
-If \code{minbox=TRUE}, the coordinates in \code{anchors} and \code{targets} represent the minimum bounding box for all nested bin pairs in each parent.
+If \code{minbox=TRUE}, the coordinates in \code{anchor1} and \code{anchor2} represent the minimum bounding box for all nested bin pairs in each parent.
 This may be more precise if nesting only occurs in a portion of the interaction space of the parent bin pair.
 }
 

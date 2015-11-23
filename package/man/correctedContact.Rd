@@ -58,7 +58,7 @@ Low-abundance bins can also be removed with \code{ignore.low} to avoid instabili
 
 Local bin pairs can be excluded as these are typically irrelevant to long-range interactions. 
 They are also typically very high-abundance and may have excessive weight during correction, if not removed. 
-This can be done by removing all bin pairs where the difference between the anchor and target indices is less than \code{exclude.local}.
+This can be done by removing all bin pairs where the difference between the first and second anchor indices is less than \code{exclude.local}.
 Setting \code{exclude.local=NA} will only use inter-chromosomal bin pairs for correction.
 
 If \code{dist.correct=TRUE}, abundances will be adjusted for distance-dependent effects.
@@ -77,11 +77,11 @@ set.seed(3423746)
 npts <- 100
 npairs <- 5000
 nlibs <- 4
-anchors <- sample(npts, npairs, replace=TRUE)
-targets <- sample(npts, npairs, replace=TRUE)
+anchor1 <- sample(npts, npairs, replace=TRUE)
+anchor2 <- sample(npts, npairs, replace=TRUE)
 data <- InteractionSet(
     matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
-    GInteractions(anchor1=anchors, anchor2=targets,
+    GInteractions(anchor1=anchor1, anchor2=anchor2,
         regions=GRanges("chrA", IRanges(1:npts, 1:npts))),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)))
 
