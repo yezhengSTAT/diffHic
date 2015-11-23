@@ -1,7 +1,7 @@
 
-R version 3.2.0 (2015-04-16) -- "Full of Ingredients"
+R Under development (unstable) (2015-11-22 r69685) -- "Unsuffered Consequences"
 Copyright (C) 2015 The R Foundation for Statistical Computing
-Platform: x86_64-unknown-linux-gnu (64-bit)
+Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -24,15 +24,9 @@ Type 'q()' to quit R.
 > # Don't worry about cases involving empty files; 
 > # that just shouldn't be a practical concern.
 > 
-> ghost <- DIList(matrix(0, nrow=0, ncol=1), anchors=integer(0),
-+ 	targets=integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5)))
-> 
-> getDistance(ghost)
-logical(0)
-> getDistance(ghost, type="gap")
-logical(0)
-> getDistance(ghost, type="span")
-logical(0)
+> ghost <- InteractionSet(matrix(0, nrow=0, ncol=1), 
++     GInteractions(integer(0), integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5))),
++     colData=DataFrame(totals=0))
 > 
 > getArea(ghost)
 numeric(0)
@@ -41,10 +35,10 @@ numeric(0)
 > 
 > f.out <- "empty.h5"
 > param <- pairParam(GRanges("chrA", IRanges(1:5, 1:5)))
-> savePairs(data.frame(anchor.id=integer(0), target.id=integer(0)), file=f.out, param=param)
+> savePairs(data.frame(anchor1.id=integer(0), anchor2.id=integer(0)), file=f.out, param=param)
 > 
 > loadChromos(f.out) # While we're here, let's see what happens.
-[1] anchors targets
+[1] anchor1 anchor2
 <0 rows> (or 0-length row.names)
 > unlink(f.out)
 > 
@@ -125,12 +119,13 @@ $max
 [39] 0 0 0 0 0 0 0 0 0 0 0 0
 
 > 
-> try(normalizeCNV(ghost, ghost)) # locfit isn't as robust as loessFit
-Error in locfit(i.fc ~ cov.fun, maxk = maxk, ..., lfproc = locfit.robust) : 
-  fewer than one row in the data
+> ghost.ranges <- SummarizedExperiment(matrix(0, 0, 0), GRanges())
+> try(normalizeCNV(ghost, ghost.ranges)) # locfit isn't as robust as loessFit
+Error in if (mean.lib.size == 0) { : 
+  missing value where TRUE/FALSE needed
 > 
-> matchMargins(ghost, ghost)
-[1] amatch tmatch
+> matchMargins(ghost, ghost.ranges)
+[1] anchor1 anchor2
 <0 rows> (or 0-length row.names)
 > 
 > asDGEList(ghost)
@@ -151,4 +146,4 @@ Sample1     1        0            1
 > 
 > proc.time()
    user  system elapsed 
- 14.324   0.602  15.193 
+  6.023   0.115   6.127 

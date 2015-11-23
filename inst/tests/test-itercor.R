@@ -22,8 +22,8 @@ comp<- function(npairs, nfrags, nlibs, lambda=5, winsorize=0.02, discard=0.02, l
 	ave.count <- exp(mglmOneGroup(counts, offset=numeric(nlibs)))
 	for (x in 1:nrow(data)) { 
 		if (ave.count[x] < 1e-6) { next } # As zeros get removed.
-		a<-data@anchor1[x]
-		t<-data@anchor2[x]
+		a<-anchors(data, id=TRUE, type="first")[x]
+		t<-anchors(data, id=TRUE, type="second")[x]
 		if (a!=t) { 
 			actual.mat[a,t] <- ave.count[x]
 			is.filled[a,t] <- TRUE

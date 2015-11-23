@@ -34,9 +34,10 @@ try(compartmentalize(ghost, dist.correct=FALSE)) # This will also fail, due to n
 
 correctedContact(ghost)
 
-try(normalizeCNV(ghost, ghost)) # locfit isn't as robust as loessFit
+ghost.ranges <- SummarizedExperiment(matrix(0, 0, 0), GRanges())
+try(normalizeCNV(ghost, ghost.ranges)) # locfit isn't as robust as loessFit
 
-matchMargins(ghost, ghost)
+matchMargins(ghost, ghost.ranges)
 
 asDGEList(ghost)
 

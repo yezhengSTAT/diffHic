@@ -2,6 +2,18 @@
 \title{diffHic News}
 \encoding{UTF-8}
 
+\section{Version 1.3.1}{\itemize{
+\item 
+Deprecated DIList objects and methods in favour of InteractionSet objects.
+
+\item
+marginCounts() now returns a RangedSummarizedExperiment for all bins.
+
+\item
+Updated user's guide, documentation and tests.
+}
+}
+
 \section{Version 1.2.0}{\itemize{
 \item
 Renamed normalize() to normOffsets().

@@ -38,11 +38,11 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 	counts <- do.call(cbind, lapply(1:nlibs, FUN=function(x) { as.integer(rpois(npairs, lambda) + 1) }) )
 	chosen <- sample(nrow(all.pairs), npairs)
 	indices <- unlist(sapply(chromos, FUN=function(x) { 1:x }), use.names=FALSE)
-	data <- InteractionSet(counts=counts, 
+	data <- InteractionSet(list(counts=counts), 
         GInteractions(anchor1=aid[chosen], anchor2=tid[chosen],
             regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices))),
         colData=DataFrame(totals=rep(1e6, nlibs)))
-	data@regions$nfrags <- rep(1:3, length.out=nbins)
+	regions(data)$nfrags <- rep(1:3, length.out=nbins)
 	
 	# Computing the reference enrichment value.
 	bg <- enrichedPairs(data, flank=flanking, prior.count=prior, exclude=exclude)
@@ -50,7 +50,7 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 
 	# Sorting them by chromosome pairs.
 	all.chrs <- as.character(seqnames(regions(data)))
-	chr.pair <- paste0(all.chrs[data@anchor1], ".", all.chrs[data@anchor2])
+	chr.pair <- paste0(all.chrs[anchors(data, type="first", id=TRUE)], ".", all.chrs[anchors(data, type="second", id=TRUE)])
 	by.chr.pair <- split(1:npairs, chr.pair)
 	first.id <- lapply(split(1:nbins, all.chrs), FUN=min)
 
@@ -58,7 +58,7 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 		cur.pairs <- by.chr.pair[[cpair]]
 		two.chrs <- strsplit(cpair, "\\.")[[1]]
 		current <- data[cur.pairs,]
-		rel.ab <- 2^(aveLogCPM(counts(current), lib.size=current$totals, prior.count=0) 
+		rel.ab <- 2^(aveLogCPM(assay(current), lib.size=current$totals, prior.count=0) 
 			+ log2(mean(current$totals)/1e6))
 
 		# Setting up the interaction space.
@@ -186,10 +186,15 @@ comp2 <- function(npairs1, npairs2, width, cuts, filter=1, flank=5, exclude=0, p
 		exclude=exclude)
 
 	ref <- squareCounts(c(dir1, dir2), width=width, param, filter=1)
-	keep <- rowSums(counts(ref)) >= filter
+	keep <- rowSums(assay(ref)) >= filter
 	enrichment <- enrichedPairs(ref, flank=flank, prior.count=prior.count, exclude=exclude)
 
-	if (!identical(ref[keep,], out$interaction)) { stop("extracted counts don't match up") }
+    subref <- ref[keep,]
+	if (!identical(regions(subref), regions(out$interaction))) { stop("extracted regions don't match up") }
+	if (!identical(anchors(subref), anchors(out$interaction))) { stop("extracted anchors don't match up") }
+	if (!identical(assays(subref), assays(out$interaction))) { stop("extracted counts don't match up") }
+	if (!identical(colData(subref), colData(out$interaction))) { stop("extracted colData doesn't match up") }
+	if (!identical(metadata(subref), metadata(out$interaction))) { stop("extracted metadata doesn't match up") }
 	if (any(abs(enrichment[keep] - out$enrichment) > 1e-6)) { stop("enrichment values don't match up") }
 	return(head(enrichment[keep]))
 }
