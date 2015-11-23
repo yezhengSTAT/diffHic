@@ -83,6 +83,7 @@ data <- InteractionSet(
         regions=GRanges(c(rep("chrA", 80), rep("chrB", 20)), 
             IRanges(c(1:80, 1:20), c(1:80, 1:20)))),
     colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)), metadata=List(width=1))
+data <- unique(data)
 
 # Running compartmentalization.
 out <- compartmentalize(data)
