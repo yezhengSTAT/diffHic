@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2015-10-30 r69588) -- "Unsuffered Consequences"
+R Under development (unstable) (2015-11-22 r69685) -- "Unsuffered Consequences"
 Copyright (C) 2015 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -182,8 +182,6 @@ Type 'q()' to quit R.
 > ###########################################################################################
 > 
 > dir.create("temp-con")
-Warning message:
-In dir.create("temp-con") : 'temp-con' already exists
 > dir1<-"temp-con/1.h5"
 > dir2<-"temp-con/2.h5"
 > 
@@ -658,4 +656,4 @@ In dir.create("temp-con") : 'temp-con' already exists
 > 
 > proc.time()
    user  system elapsed 
- 89.386   1.652  91.496 
+ 45.559   0.444  46.209 
