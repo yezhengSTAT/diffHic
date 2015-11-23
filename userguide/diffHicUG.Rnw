@@ -224,7 +224,7 @@ The \code{preparePairs} function matches the mapping location of each read to a 
 Mapping results for paired reads should be provided in a name-sorted BAM file.
 The function converts the read position into an index, pointing to the matching restriction fragment in \code{hs.frag}.
 The resulting pairs of indices are stored in an index file using the HDF5 format.
-The larger index refers to the ``first'' anchor fragment whereas the smaller is the second.
+The fragments to which the reads mapped are referred to as ``anchors'' -- the larger index is defined as the ``first'' anchor fragment whereas the smaller is the second.
 This process is demonstrated using Hi-C data from GM06990 cells.
 
 <<>>=
@@ -307,8 +307,8 @@ Such read pairs are technical artifacts that are (incorrectly) retained by \code
 
 \subsection{Setting size thresholds with strand orientation plots}
 \label{sec:strorient}
-The strand orientation for a read pair refers to the combination of strands for the two reads.
-These are stored as flags where setting \code{0x1} or \code{0x2} means that the reads on the first or second fragment, respectively, are mapped on the reverse strand.
+The strand orientation for a read pair refers to the combination of strands for the two alignments.
+These are stored as flags where setting \code{0x1} or \code{0x2} means that the read on the first or second anchor fragment, respectively, is mapped on the reverse strand.
 If different pieces of DNA were randomly ligated together, one would expect to observe equal proportions of all strand orientations. 
 This can be tested by examining the distribution of strand orientations for inter-chromosomal read pairs.
 Each orientation is equally represented across these read pairs, which is expected as different chromosomes are distinct pieces of DNA.
@@ -387,7 +387,7 @@ mergePairs(files=c("SRR027957_trimmed.h5", "SRR027958_trimmed.h5"), "merged.h5")
 
 In addition, any Hi-C dataset that is processed manually by the user can be stored in an index file using the \code{savePairs} function.
 This takes a dataframe with the first and second anchor indices, as well as any additional information that might be useful.
-The idea is to allow entry into the \pkgname{} analysis from other pipelines.
+The idea is to provide an entry point into the \pkgname{} analysis from other pipelines.
 If the dataset is too large, one can save chunks at a time before merging them all together with \code{mergePairs}.
 
 <<>>=
@@ -397,7 +397,8 @@ dummy <- data.frame(anchor1.id, anchor2.id, other.data=as.integer(runif(100, 1, 
 savePairs(dummy, "example.h5", hs.param)
 @
 
-For full compatibility, users should include the alignment positions and lengths as \code{anchorX.pos} and \code{anchorX.len} for both reads (i.e., \code{X} set to 1 or 2).
+For full compatibility, users should include the alignment positions and lengths for each read pair as \code{anchorX.pos} and \code{anchorX.len},
+    where \code{X} is set to 1 or 2 for the corresponding read.
 The alignment position refers to the 1-based coordinate of the left-most base of the alignment.
 The alignment length refers to the span of the alignment relative to the reference, and should be negative for alignments on the reverse strand.
 This information will be used in downstream \pkgname{} functions, such as read counting around blacklisted regions.
@@ -497,7 +498,7 @@ head(anchors(data, type="first"))
 head(anchors(data, type="second"))
 @
 
-This generates a \code{InteractionSet} object that contains the relevant count and coordinate information.
+This generates an \code{InteractionSet} object that contains count and coordinate information.
 Each row of the count matrix represents the counts for an interaction, while each column represents a library.
 Each interaction is characterized as that between a pair of genomic intervals - in this case, genomic bins.
 The first and second anchor notation is used for these intervals, whereby the first anchor bin is that with the ``higher'' genomic coordinate.
@@ -618,7 +619,7 @@ margin.data <- marginCounts(input, mm.param, width=bin.size)
 margin.data
 @
 
-Each row of the returned \code{RangedSummarizedExperiment} contains the marginal read counts for a single genomic bin.
+Each row of the \code{RangedSummarizedExperiment} contains the marginal read counts for a genomic bin.
 For this dataset, there are no major changes in coverage for the vast majority of bins.
 The most extreme events occur at low abundances and are unlikely to be reliable.
 This suggests that a direct comparison of interaction intensities will be valid.
@@ -1490,7 +1491,7 @@ As two marginal log-ratios are present for each bin pair, these are added togeth
 <<>>=
 matched <- matchMargins(rick.data, rick.marg)
 m.adjc <- cpm(asDGEList(rick.marg), log=TRUE)
-sum.madjc <- m.adjc[matched$amatch,] + m.adjc[matched$tmatch,]
+sum.madjc <- m.adjc[matched$anchor1,] + m.adjc[matched$anchor2,]
 margin.lr <- sum.madjc[,1] - sum.madjc[,2]
 @
 
