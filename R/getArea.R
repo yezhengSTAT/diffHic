@@ -73,7 +73,7 @@ getArea <- function(data, bp=TRUE)
 			right.edge <- right.edge[is.partial]
 			left.edge <- left.edge[is.partial]
 			by.chr <- split(seq_len(sum(is.partial)), as.character(seqnames(reg)[ax][is.partial]))
-			fragments <- exptData(data)$param$fragments
+			fragments <- metadata(data)$param$fragments
 			fdata <- .splitByChr(fragments)
 
 			for (x in seq_along(fdata$chr)) {

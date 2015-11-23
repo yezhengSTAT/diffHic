@@ -46,10 +46,10 @@ b <- 20
 regions <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 1:b)))
 
 set.seed(23943)
-all.anchors <- sample(length(regions), 50, replace=TRUE)
-all.targets <- as.integer(runif(50, 1, all.anchors+1))
+all.anchor1 <- sample(length(regions), 50, replace=TRUE)
+all.anchor2 <- as.integer(runif(50, 1, all.anchor1+1))
 data <- InteractionSet(matrix(rnbinom(200, mu=10, size=10), 50, 4), 
-    GInteractions(anchor1=all.anchors, anchor2=all.targets, regions=regions), 
+    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions), 
     colData=DataFrame(totals=runif(4, 1e6, 2e6)), metadata=List(width=1))
 
 # Getting peaks.
