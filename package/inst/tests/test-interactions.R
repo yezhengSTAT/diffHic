@@ -171,7 +171,7 @@ comp<-function(npairs1, npairs2, dist, cuts, filter=1L, restrict=NULL, cap=NA) {
 		stop("mismatches in library sizes") 
 	}
 	if (!identical(overall, ref$table)) { stop("mismatches in counts or region coordinates") }
-	if (filter<=1L && !identical(as.integer(colSums(counts(y))+0.5), y$totals)) { 
+	if (filter<=1L && !identical(as.integer(colSums(assay(y))+0.5), y$totals)) { 
 		stop("sum of counts from binning should equal totals without filtering") }
 
 	return(head(overall))
