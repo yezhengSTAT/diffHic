@@ -45,7 +45,7 @@
 % Set to change date for document, not compile date.
 \date{First edition 12 December 2012\\
 \vspace{6pt}
-Last revised 7 October 2015}
+Last revised 22 November 2015}
 
 % Removing the bibliography title so it shows up in the contents.
 \makeatletter
@@ -224,8 +224,8 @@ The \code{preparePairs} function matches the mapping location of each read to a 
 Mapping results for paired reads should be provided in a name-sorted BAM file.
 The function converts the read position into an index, pointing to the matching restriction fragment in \code{hs.frag}.
 The resulting pairs of indices are stored in an index file using the HDF5 format.
-The larger index is designated as the ``anchor'' whereas the smaller is the ``target''.
-This is demonstrated using Hi-C data from GM06990 cells.
+The larger index refers to the ``first'' anchor fragment whereas the smaller is the second.
+This process is demonstrated using Hi-C data from GM06990 cells.
 
 <<>>=
 diagnostics <- preparePairs("SRR027957.bam", hs.param, 
@@ -307,8 +307,8 @@ Such read pairs are technical artifacts that are (incorrectly) retained by \code
 
 \subsection{Setting size thresholds with strand orientation plots}
 \label{sec:strorient}
-The strand orientation for a read pair refers to the combination of strands for the anchor/target reads.
-These are stored as flags where setting \code{0x1} or \code{0x2} means that the anchor or target reads, respectively, are mapped on the reverse strand.
+The strand orientation for a read pair refers to the combination of strands for the two reads.
+These are stored as flags where setting \code{0x1} or \code{0x2} means that the reads on the first or second fragment, respectively, are mapped on the reverse strand.
 If different pieces of DNA were randomly ligated together, one would expect to observe equal proportions of all strand orientations. 
 This can be tested by examining the distribution of strand orientations for inter-chromosomal read pairs.
 Each orientation is equally represented across these read pairs, which is expected as different chromosomes are distinct pieces of DNA.
@@ -386,18 +386,18 @@ mergePairs(files=c("SRR027957_trimmed.h5", "SRR027958_trimmed.h5"), "merged.h5")
 @
 
 In addition, any Hi-C dataset that is processed manually by the user can be stored in an index file using the \code{savePairs} function.
-This takes a dataframe with anchor and target indices, as well as any additional information that might be useful.
+This takes a dataframe with the first and second anchor indices, as well as any additional information that might be useful.
 The idea is to allow entry into the \pkgname{} analysis from other pipelines.
 If the dataset is too large, one can save chunks at a time before merging them all together with \code{mergePairs}.
 
 <<>>=
-anchor.id <- as.integer(runif(100, 1, length(hs.param$fragments)))
-target.id <- as.integer(runif(100, 1, length(hs.param$fragments)))
-dummy <- data.frame(anchor.id, target.id, other.data=as.integer(runif(100, 1, 100)))
+anchor1.id <- as.integer(runif(100, 1, length(hs.param$fragments)))
+anchor2.id <- as.integer(runif(100, 1, length(hs.param$fragments)))
+dummy <- data.frame(anchor1.id, anchor2.id, other.data=as.integer(runif(100, 1, 100)))
 savePairs(dummy, "example.h5", hs.param)
 @
 
-For full compatibility, users should include the alignment positions and lengths as \code{xxx.pos} and \code{xxx.len} for both the anchor and target reads (replacing \code{xxx} with \code{anchor} or \code{target}).
+For full compatibility, users should include the alignment positions and lengths as \code{anchorX.pos} and \code{anchorX.len} for both reads (i.e., \code{X} set to 1 or 2).
 The alignment position refers to the 1-based coordinate of the left-most base of the alignment.
 The alignment length refers to the span of the alignment relative to the reference, and should be negative for alignments on the reverse strand.
 This information will be used in downstream \pkgname{} functions, such as read counting around blacklisted regions.
@@ -492,15 +492,15 @@ bin.size <- 1e6
 mm.param <- pairParam(mm.frag)
 data <- squareCounts(input, mm.param, width=bin.size, filter=1)
 data
-head(counts(data))
-head(anchors(data))
-head(targets(data))
+head(assay(data))
+head(anchors(data, type="first"))
+head(anchors(data, type="second"))
 @
 
-This generates a \code{DIList} object that contains the relevant count and coordinate information.
+This generates a \code{InteractionSet} object that contains the relevant count and coordinate information.
 Each row of the count matrix represents the counts for an interaction, while each column represents a library.
 Each interaction is characterized as that between a pair of genomic intervals - in this case, genomic bins.
-Again, anchor and target notation is used for these intervals, whereby the anchor bin is that with the ``higher'' genomic coordinate.
+The first and second anchor notation is used for these intervals, whereby the first anchor bin is that with the ``higher'' genomic coordinate.
 
 Bin pairs can also be filtered to remove those with to a count sum below \code{filter}.
 This removes uninformative bin pairs with very few read pairs, and reduces the memory footprint of the function.
@@ -565,7 +565,7 @@ redata <- connectCounts(input, mm.param, regions=gene.body)
 redata
 @
 
-Again, anchor and target notation applies whereby the interval with the larger start coordinate in the genome is defined as the anchor.
+Again, first/second anchor notation applies whereby the interval with the larger start coordinate in the genome is defined as the first anchor.
 Note that the anchor may not have a larger end coordinate if the supplied \code{regions} are nested.
 In addition, each region is rounded to the nearest restriction site.
 Resorting is also performed, though the indices of the original regions can be found in the metadata as \code{original} if back-referencing is necessary.
@@ -598,8 +598,8 @@ probe.loc <- GRanges(c("chr1", "chr2", "chr3"),
     IRanges(c(1e7, 2e7, 3e7), c(1e7, 2e7, 3e7)))
 viewpoints <- resize(probe.loc, fix="center", width=1e5)
 viewdata <- connectCounts(input, mm.param, regions=viewpoints, second.regions=1e5)
-head(anchors(viewdata))
-head(targets(viewdata))
+head(anchors(viewdata, type="first"))
+head(anchors(viewdata, type="second"))
 @
 
 As these results demonstrate, interactions are only considered if exactly one interacting locus is from the specified \code{regions}.
@@ -618,11 +618,7 @@ margin.data <- marginCounts(input, mm.param, width=bin.size)
 margin.data
 @
 
-Each row of the returned \code{DIList} contains the marginal read counts for a single genomic bin.
-Note that the anchor/target notation is superfluous for \code{marginCounts}.
-This is because the marginal counts refer to individual bins rather than bin pairs.
-Nonetheless, a \code{DIList} is still returned for consistency, in which the anchor and target regions are identical.
-
+Each row of the returned \code{RangedSummarizedExperiment} contains the marginal read counts for a single genomic bin.
 For this dataset, there are no major changes in coverage for the vast majority of bins.
 The most extreme events occur at low abundances and are unlikely to be reliable.
 This suggests that a direct comparison of interaction intensities will be valid.
@@ -769,7 +765,7 @@ count.keep <- ave.ab >= aveLogCPM(5, lib.size=mean(data$totals))
 summary(count.keep)
 @
 
-The \code{count.keep} vector is then used to subset the \code{DIList}.
+The \code{count.keep} vector is then used to subset the \code{InteractionSet}.
 The resulting \code{dummy} object will contain only the interesting bin pairs for downstream analysis.
 The same procedure can be used for any logical or integer vector that specifies the bin pairs to be retained.
 
@@ -930,26 +926,26 @@ In both examples, the bin pairs correspond nicely to punctate high-intensity con
 #keep2 <- peak.keep & !is.na(dist)
 #which(keep2)[order(enrichments[keep2], decreasing=TRUE)][1:100]
 #plotPlaid(input[3], param=mm.param, width=2e5, cap=20, 
-#	first=resize(anchors(data[chosen]), fix="center", width=10e6),
-#	second=resize(targets(data[chosen]), fix="center", width=10e6))
-a.list <- GRanges(c("chr11", "chr4"), IRanges(
+#	first=resize(anchors(data[chosen], type="first"), fix="center", width=10e6),
+#	second=resize(anchors(data[chosen], type="second"), fix="center", width=10e6))
+a1.list <- GRanges(c("chr11", "chr4"), IRanges(
 			c(80999224, 153002112),
 			c(81998782, 154006051)))
-t.list <- GRanges(c("chr11", "chr4"), IRanges(
+a2.list <- GRanges(c("chr11", "chr4"), IRanges(
 			c(66001477, 130998845),
 			c(67011476, 131997373)))
 capped <- c(50, 50)
 par(mfrow=c(1,2))
-for (chosen in 1:length(a.list)) { 
-	if (!suppressWarnings(any(overlapsAny(anchors(data[peak.keep]), a.list[chosen], type="equal") & 
-			overlapsAny(targets(data[peak.keep]), t.list[chosen], type="equal")))) { stop("can't find example for peak-calling") }
+for (chosen in seq_along(a1.list)) { 
+	if (!suppressWarnings(any(overlapsAny(anchors(data[peak.keep], type="first"), a1.list[chosen], type="equal") & 
+			overlapsAny(anchors(data[peak.keep], type="second"), a2.list[chosen], type="equal")))) { stop("can't find example for peak-calling") }
 	plotPlaid(input[3], param=mm.param, width=2e5, max.count=capped[chosen], 
-			first.region=resize(a.list[chosen], fix="center", width=10e6),
-			second.region=resize(t.list[chosen], fix="center", width=10e6),
+			first.region=resize(a1.list[chosen], fix="center", width=10e6),
+			second.region=resize(a2.list[chosen], fix="center", width=10e6),
 			main=paste("Example", chosen))
 	box()
-	rect(start(a.list[chosen]), start(t.list[chosen]),
-		end(a.list[chosen]), end(t.list[chosen]), border="red")
+	rect(start(a1.list[chosen]), start(a2.list[chosen]),
+		end(a1.list[chosen]), end(a2.list[chosen]), border="red")
 }
 @
 \end{center}
@@ -1289,7 +1285,7 @@ The MA plot can be examined after adjusting the log-counts with the offsets.
 Most of the trend is removed, indicating that non-linear normalization was successful.
 
 <<echo=FALSE,eval=FALSE,label=manorm>>=
-adj.counts <- log2(counts(data) + 0.5) - nb.off/log(2)
+adj.counts <- log2(assay(data) + 0.5) - nb.off/log(2)
 @
 
 <<eval=FALSE>>=
@@ -1352,9 +1348,9 @@ This is computed separately for each library by setting \code{average=FALSE}, to
 
 <<>>=
 corrected <- correctedContact(original, average=FALSE)
-anchor.bias <- corrected$bias[anchors(original, id=TRUE),]
-target.bias <- corrected$bias[targets(original, id=TRUE),]
-iter.off <- log(anchor.bias * target.bias)
+anchor1.bias <- corrected$bias[anchors(original, type="first", id=TRUE),]
+anchor2.bias <- corrected$bias[anchors(original, type="second", id=TRUE),]
+iter.off <- log(anchor1.bias * anchor2.bias)
 @
 
 Of course, iterative correction only removes biases between different bins.
@@ -1505,7 +1501,7 @@ Note that increasing \code{maxk} may be necessary to obtain sufficient accuracy 
 
 <<eval=FALSE,label=cnvplotter>>=
 before <- cpm(asDGEList(rick.data), log=TRUE)
-after <- log2(counts(rick.data)+0.5) - normalizeCNV(rick.data, rick.marg, maxk=1000)/log(2)
+after <- log2(assay(rick.data)+0.5) - normalizeCNV(rick.data, rick.marg, maxk=1000)/log(2)
 par(mfrow=c(1,2), cex.axis=1.2, cex.lab=1.4)
 smoothScatter(margin.lr, before[,1]-before[,2], ylim=c(-4, 4), main="Before",
     xlab="Sum of marginal log-ratios", ylab="Interaction log-ratio")
@@ -1745,11 +1741,11 @@ These can be saved to file as necessary.
 Resorting by $p$-value just makes it easier to parse the final table, as the most interesting differential interactions are placed at the top.
 
 <<>>=
-ax.d <- anchors(data)
-tx.d <- targets(data)
-results.d <- data.frame(anchor.chr=seqnames(ax.d), anchor.start=start(ax.d), 
-    anchor.end=end(ax.d),target.chr=seqnames(tx.d), target.start=start(tx.d), 
-    target.end=end(tx.d), result$table, FDR=adj.p)
+a1x.d <- anchors(data, type="first")
+a2x.d <- anchors(data, type="second")
+results.d <- data.frame(anchor1.chr=seqnames(a1x.d), anchor1.start=start(a1x.d), 
+    anchor1.end=end(a1x.d), anchor2.chr=seqnames(a2x.d), anchor2.start=start(a2x.d), 
+    anchor2.end=end(a2x.d), result$table, FDR=adj.p)
 o.d <- order(result$table$PValue)
 write.table(results.d[o.d,], file="results.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1790,11 +1786,11 @@ The coordinates of this rectangle can be easily recorded, whereas it is more dif
 Identification of the top-ranking bin pair within each cluster may also be desirable (see Section~\ref{sec:nesting}).
 
 <<>>=
-ax.c <- clustered$anchors
-tx.c <- clustered$targets
-results.c <- data.frame(anchor.chr=seqnames(ax.c), anchor.start=start(ax.c), 
-    anchor.end=end(ax.c), target.chr=seqnames(tx.c), target.start=start(tx.c), 
-    target.end=end(tx.c), tabcluster)
+a1x.c <- clustered$anchor1
+a2x.c <- clustered$anchor2
+results.c <- data.frame(anchor1.chr=seqnames(a1x.c), anchor1.start=start(a1x.c), 
+    anchor1.end=end(a1x.c), anchor2.chr=seqnames(a2x.c), anchor2.start=start(a2x.c), 
+    anchor2.end=end(a2x.c), tabcluster)
 o.c <- order(tabcluster$PValue)
 write.table(results.c[o.c,], file="clustered.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1816,8 +1812,8 @@ threshold <- 0.05
 is.sig <- adj.p <= threshold
 sig.data <- data[is.sig,]
 clustered.sig <- clusterPairs(sig.data, tol=1, upper=NULL)
-head(clustered.sig$anchors)
-head(clustered.sig$targets)
+head(clustered.sig$anchor1)
+head(clustered.sig$anchor2)
 @
 
 However, this summarization procedure is not statistically rigorous.
@@ -1896,12 +1892,12 @@ Statistics for each of the larger bin pairs can then be stored to file.
 Reordering is performed using the combined $p$-value to promote the strongest changes.
 
 <<>>=
-ax.s <- boxed$anchors
-tx.s <- boxed$targets
+a1x.s <- boxed$anchor1
+a2x.s <- boxed$anchor2
 o.s <- order(cons$PValue)
-results.s <- data.frame(anchor.chr=seqnames(ax.s), anchor.start=start(ax.s), 
-    anchor.end=end(ax.s), target.chr=seqnames(tx.s), target.start=start(tx.s), 
-    target.end=end(tx.s), cons)
+results.s <- data.frame(anchor1.chr=seqnames(a1x.s), anchor1.start=start(a1x.s), 
+    anchor1.end=end(a1x.s), anchor2.chr=seqnames(a2x.s), anchor2.start=start(a2x.s), 
+    anchor2.end=end(a2x.s), cons)
 write.table(results.s[o.s,], file="sizecons.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
@@ -1928,10 +1924,10 @@ However, keep in mind that the FDR is computed with respect to the features, not
 <<>>=
 small.ids <- boxed$indices$smaller
 inside <- csaw::getBestTest(small.ids, result.small$table)
-ax.n <- anchors(smaller.data[inside$best,])
-tx.n <- targets(smaller.data[inside$best,])
-nested <- data.frame(anchor.start=start(ax.n), anchor.end=end(ax.n),
-    target.start=start(tx.n), target.end=end(tx.n),
+a1x.n <- anchors(smaller.data[inside$best,], type="first")
+a2x.n <- anchors(smaller.data[inside$best,], type="second")
+nested <- data.frame(anchor1.start=start(a1x.n), anchor1.end=end(a1x.n),
+    anchor2.start=start(a2x.n), anchor2.end=end(a2x.n),
     result.small$table[inside$best,c("logFC", "F")])
 head(nested)
 expanded <- rep(NA, nrow(results.s)) # As some parents do not have nested elements.
@@ -1955,23 +1951,23 @@ Each ``pixel'' represents an interaction between the corresponding intervals on 
 The color of the pixel is proportional to the number of read pairs mapped between the interacting loci.
 
 <<label=plaid1,eval=FALSE,echo=FALSE>>=
-plotPlaid(input[1], first=expanded.a, second=expanded.t, max.count=bound1, 
+plotPlaid(input[1], first=expanded1, second=expanded2, max.count=cap.wt, 
     width=5e4, param=mm.param, main="Flox")
-rect(start(ax.s[chosen]), start(tx.s[chosen]), end(ax.s[chosen]), end(tx.s[chosen]))
+rect(start(a1x.s[chosen]), start(a2x.s[chosen]), end(a1x.s[chosen]), end(a2x.s[chosen]))
 @
 
 <<label=plaid3,eval=FALSE,echo=FALSE>>=
-plotPlaid(input[3], first=expanded.a, second=expanded.t, max.count=bound3, 
+plotPlaid(input[3], first=expanded1, second=expanded2, max.count=cap.ko, 
     width=5e4, param=mm.param, main="KO")
-rect(start(ax.s[chosen]), start(tx.s[chosen]), end(ax.s[chosen]), end(tx.s[chosen]))
+rect(start(a1x.s[chosen]), start(a2x.s[chosen]), end(a1x.s[chosen]), end(a2x.s[chosen]))
 @
 
 <<eval=FALSE,echo=FALSE,label=setup>>=
 chosen <- o.s[1]
-expanded.a <- resize(ax.s[chosen], fix="center", width=bin.size*5)
-expanded.t <- resize(tx.s[chosen], fix="center", width=bin.size*5)
-bound1 <- 100
-bound3 <- bound1*data$totals[3]/data$totals[1]
+expanded1 <- resize(a1x.s[chosen], fix="center", width=bin.size*5)
+expanded2 <- resize(a2x.s[chosen], fix="center", width=bin.size*5)
+cap.wt <- 100
+cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 @
 
 <<eval=FALSE>>=
@@ -1982,8 +1978,8 @@ bound3 <- bound1*data$totals[3]/data$totals[1]
 
 <<results=hide,echo=FALSE>>=
 <<setup>>
-if (as.character(seqnames(ax.s[chosen]))!="chr11" || start(ax.s[chosen])!=30001298 || end(ax.s[chosen])!=31000010 ||
-    as.character(seqnames(tx.s[chosen]))!="chr11" || start(tx.s[chosen])!=29000942 || end(tx.s[chosen])!=30001301) {
+if (as.character(seqnames(a1x.s[chosen]))!="chr11" || start(a1x.s[chosen])!=30001298 || end(a1x.s[chosen])!=31000010 ||
+    as.character(seqnames(a2x.s[chosen]))!="chr11" || start(a2x.s[chosen])!=29000942 || end(a2x.s[chosen])!=30001301) {
 	warning("first plaid plot hits the wrong spot")
 }
 @
@@ -2021,23 +2017,23 @@ Because the counts are ``averaged'' across the area of the interaction space, th
 Of course, any sharp changes within each of these large bin pairs will be overlooked as the smaller bin pairs are not used.
 
 <<label=plaid1b,eval=FALSE,echo=FALSE>>=
-plotPlaid(input[1], first=expanded.a, second=expanded.t, max.count=bound1, 
+plotPlaid(input[1], first=expanded1, second=expanded2, max.count=cap.wt, 
     width=5e4, param=mm.param, main="Flox")
-rect(start(ax.d[chosen]), start(tx.d[chosen]), end(ax.d[chosen]), end(tx.d[chosen]))
+rect(start(a1x.d[chosen]), start(a2x.d[chosen]), end(a1x.d[chosen]), end(a2x.d[chosen]))
 @
 
 <<label=plaid3b,eval=FALSE,echo=FALSE>>=
-plotPlaid(input[3], first=expanded.a, second=expanded.t, max.count=bound3, 
+plotPlaid(input[3], first=expanded1, second=expanded2, max.count=cap.ko, 
     width=5e4, param=mm.param, main="KO")
-rect(start(ax.d[chosen]), start(tx.d[chosen]), end(ax.d[chosen]), end(tx.d[chosen]))
+rect(start(a1x.d[chosen]), start(a2x.d[chosen]), end(a1x.d[chosen]), end(a2x.d[chosen]))
 @
 
 <<eval=FALSE,echo=FALSE,label=setup2>>=
 chosen <- o.d[1]
-expanded.a <- resize(ax.d[chosen], fix="center", width=bin.size*5)
-expanded.t <- resize(tx.d[chosen], fix="center", width=bin.size*5)
-bound1 <- 30
-bound3 <- bound1*data$totals[3]/data$totals[1]
+expanded1 <- resize(a1x.d[chosen], fix="center", width=bin.size*5)
+expanded2 <- resize(a2x.d[chosen], fix="center", width=bin.size*5)
+cap.wt <- 30
+cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 @
 
 <<eval=FALSE>>=
@@ -2048,8 +2044,8 @@ bound3 <- bound1*data$totals[3]/data$totals[1]
 
 <<results=hide,echo=FALSE>>=
 <<setup2>>
-if (as.character(seqnames(ax.d[chosen]))!="chr3" || start(ax.d[chosen])!=151001261 || end(ax.d[chosen])!=152002835 ||
-    as.character(seqnames(tx.d[chosen]))!="chr3" || start(tx.d[chosen])!=145998892 || end(tx.d[chosen])!=147005847) {
+if (as.character(seqnames(a1x.d[chosen]))!="chr3" || start(a1x.d[chosen])!=151001261 || end(a1x.d[chosen])!=152002835 ||
+    as.character(seqnames(a2x.d[chosen]))!="chr3" || start(a2x.d[chosen])!=145998892 || end(a2x.d[chosen])!=147005847) {
 	warning("second plaid plot hits the wrong spot")
 }
 @
@@ -2075,27 +2071,27 @@ The coordinates of each interacting bin can be identified by extending lines fro
 
 <<eval=FALSE,echo=FALSE,label=rot1>>=
 rotPlaid(input[1], mm.param, region=example, width=2.5e4, 
-    main="Flox", max.count=bound1)
+    main="Flox", max.count=cap.wt)
 @
 
 <<eval=FALSE,echo=FALSE,label=rot2>>=
 rotPlaid(input[3], mm.param, region=example, width=2.5e4,
-    main="KO", max.count=bound3)
+    main="KO", max.count=cap.ko)
 @
 
 <<eval=TRUE,echo=FALSE,label=rotset>>=
 chosen <- o.s[3]
-example <- tx.s[chosen]
-end(example) <- end(ax.s[chosen])
-nest.mid.a <- (results.n$nest.anchor.start[chosen]+results.n$nest.anchor.end[chosen])/2
-nest.mid.t <- (results.n$nest.target.start[chosen]+results.n$nest.target.end[chosen])/2
-nest.mid <- (nest.mid.a + nest.mid.t)/2
-nest.gap <- nest.mid.a - nest.mid.t
+example <- a2x.s[chosen]
+end(example) <- end(a1x.s[chosen])
+nest.mid.a1 <- (results.n$nest.anchor1.start[chosen]+results.n$nest.anchor1.end[chosen])/2
+nest.mid.a2 <- (results.n$nest.anchor2.start[chosen]+results.n$nest.anchor2.end[chosen])/2
+nest.mid <- (nest.mid.a1 + nest.mid.a2)/2
+nest.gap <- nest.mid.a1 - nest.mid.a2
 @
 
 <<echo=FALSE,results=hide>>=
-if (as.character(seqnames(ax.s[chosen]))!="chr2" || start(ax.s[chosen])!=136998216 || end(ax.s[chosen])!=138001392 ||
-    as.character(seqnames(tx.s[chosen]))!="chr2" || start(tx.s[chosen])!=136001779 || end(tx.s[chosen])!=136998219) {
+if (as.character(seqnames(a1x.s[chosen]))!="chr2" || start(a1x.s[chosen])!=136998216 || end(a1x.s[chosen])!=138001392 ||
+    as.character(seqnames(a2x.s[chosen]))!="chr2" || start(a2x.s[chosen])!=136001779 || end(a2x.s[chosen])!=136998219) {
 	warning("third plaid plot hits the wrong spot")
 }
 @
@@ -2139,9 +2135,9 @@ The log-fold changes also incorporate normalization information, which is diffic
 
 <<label=diplot,eval=FALSE>>=
 chosen <- o.d[5]
-expanded.a <- resize(ax.d[chosen], fix="center", width=5e7)
-expanded.t <- resize(tx.d[chosen], fix="center", width=5e7)
-colfun <- plotDI(data, result$table$logFC, expanded.a, expanded.t, diag=FALSE)
+expanded1 <- resize(a1x.d[chosen], fix="center", width=5e7)
+expanded2 <- resize(a2x.d[chosen], fix="center", width=5e7)
+colfun <- plotDI(data, result$table$logFC, expanded1, expanded2, diag=FALSE)
 @
 
 \setkeys{Gin}{width=0.5\textwidth}
@@ -2153,8 +2149,8 @@ colfun <- plotDI(data, result$table$logFC, expanded.a, expanded.t, diag=FALSE)
 \setkeys{Gin}{width=0.8\textwidth}
 
 <<results=hide,echo=FALSE>>=
-if (as.character(seqnames(ax.d[chosen]))!="chr16" || start(ax.d[chosen])!=70000341 || end(ax.d[chosen])!=70999295 ||
-    as.character(seqnames(tx.d[chosen]))!="chr16" || start(tx.d[chosen])!=65999261 || end(tx.d[chosen])!=67001066) {
+if (as.character(seqnames(a1x.d[chosen]))!="chr16" || start(a1x.d[chosen])!=70000341 || end(a1x.d[chosen])!=70999295 ||
+    as.character(seqnames(a2x.d[chosen]))!="chr16" || start(a2x.d[chosen])!=65999261 || end(a2x.d[chosen])!=67001066) {
 	warning("first DI plot hits the wrong spot")
 }
 @
@@ -2172,7 +2168,7 @@ A rotated DI plot can be similarly constructed using the \code{rotDI} function.
 % If it were a problem, though, non-linear normalization wouldn't help, because the different compartments don't separate by abundance.
 % The slight decrease in inter-compartment interactions is overshadowed by the distance effect.
 % If you want to get rid of it, you'll have to explicitly identify compartments and normalize them directly.
-% This is a pain, though we could do it by converting the DIList to a full matrix, and running PCA on the matrix for each chromosome.
+% This is a pain, though we could do it by converting the InteractionSet to a full matrix, and running PCA on the matrix for each chromosome.
 
 Both \code{rotDI} and \code{plotDI} will invisibly return another function that maps log-fold changes to colors.
 This can be used to generate a custom color bar, as shown below.
