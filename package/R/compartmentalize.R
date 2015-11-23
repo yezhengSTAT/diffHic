@@ -22,7 +22,7 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	stored <- list()
 	for (chr in seqlevels(regions(data))) {
 		mat <- inflate(data, rows=chr, columns=chr, fill=contacts)
-		stored[[chr]] <- .compartChr(as.matrix(mat), data, dist2trend, robust.cov, cov.correct, centers, ...)
+		stored[[chr]] <- .compartChr(mat, data, dist2trend, robust.cov, cov.correct, centers, ...)
 	}
 
 # Not sensible to use the entire thing, as clustering will probably be dominated by chromosome, not compartment.
@@ -36,6 +36,10 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 }
 
 .compartChr <- function(mat, data, dist2trend, robust.cov, cov.correct, centers, ...) {
+	all.a <- anchors(mat, type="row", id=TRUE)
+	mat <- as.matrix(mat)
+	colnames(mat) <- rownames(mat) <- all.a
+
 	# Filling NA's (i.e., zero's). Using mid-distance, interpolating to get the trend.
 	lost <- which(is.na(mat), arr.ind=TRUE)
 	seq.id <- as.integer(seqnames(regions(data)))
@@ -79,7 +83,7 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 		comp <- temp
 	}
 
-	names(comp) <- rownames(mat)
+	names(comp) <- all.a
 	return(list(compartment=comp, matrix=mat))
 }
 

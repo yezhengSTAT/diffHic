@@ -958,7 +958,7 @@ This is because each peak, by definition, should be isolated in its neighborhood
 Larger proportions suggest that more aggressive filtering on the enrichment score is required, e.g., in the second example. 
 
 <<>>=
-neighborhood <- (2*flank.width + 1) * exptData(data)$width
+neighborhood <- (2*flank.width + 1) * metadata(data)$width
 boxed <- boxPairs(data[peak.keep], reference=neighborhood)
 out <- tabulate(tabulate(boxed$indices[[1]]))
 setNames(round(c(out[1:5], sum(out[5:length(out)]))/sum(out)*100, 1), c(1:5, ">5"))
