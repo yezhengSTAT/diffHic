@@ -35,9 +35,9 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	return(stored)
 }
 
-.compartChr <- function(mat, data, dist2trend, robust.cov, cov.correct, centers, ...) {
-	all.a <- anchors(mat, type="row", id=TRUE)
-	mat <- as.matrix(mat)
+.compartChr <- function(cm, data, dist2trend, robust.cov, cov.correct, centers, ...) {
+	all.a <- anchors(cm, type="row", id=TRUE)
+	mat <- as.matrix(cm)
 	colnames(mat) <- rownames(mat) <- all.a
 
 	# Filling NA's (i.e., zero's). Using mid-distance, interpolating to get the trend.
@@ -84,7 +84,8 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	}
 
 	names(comp) <- all.a
-	return(list(compartment=comp, matrix=mat))
+    as.matrix(cm) <- mat
+	return(list(compartment=comp, matrix=cm))
 }
 
 

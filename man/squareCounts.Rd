@@ -97,7 +97,7 @@ unlink(fout, recursive=TRUE)
 \seealso{
 \code{\link{preparePairs}},
 \code{\link{cutGenome}},
-\code{\link{DIList-class}}
+\code{\link[InteractionSet]{InteractionSet-class}}
 }
 
 \references{
