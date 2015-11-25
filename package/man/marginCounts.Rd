@@ -70,7 +70,7 @@ unlink(fout, recursive=TRUE)
 
 \seealso{
 \code{\link{squareCounts}},
-\code{\link{DIList-class}}
+\code{\link[SummarizedExperiment]{RangedSummarizedExperiment-class}}
 }
 
 \keyword{counting}

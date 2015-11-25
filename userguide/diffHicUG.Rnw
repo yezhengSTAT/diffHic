@@ -45,7 +45,7 @@
 % Set to change date for document, not compile date.
 \date{First edition 12 December 2012\\
 \vspace{6pt}
-Last revised 22 November 2015}
+Last revised 25 November 2015}
 
 % Removing the bibliography title so it shows up in the contents.
 \makeatletter
@@ -2246,7 +2246,7 @@ The red/blue bar at the top of the plot indicates the genomic intervals in eithe
 <<eval=FALSE,label=compartplot>>=
 par(xpd=TRUE)
 color.range <- c(-5, 5)
-temp <- output$chr5$matrix
+temp <- as.matrix(output$chr5$matrix)
 temp[temp < color.range[1]] <- color.range[1]
 temp[temp > color.range[2]] <- color.range[2]
 image(temp, zlim=color.range)
