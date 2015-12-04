@@ -7,12 +7,12 @@
 \description{Plot differential interactions in a plaid format with informative coloring.}
 
 \usage{
-plotDI(data, fc, first.region, second.region=first.region, 
-    col.up="red", col.down="blue", background="grey70", 
-    zlim=NULL, xlab=NULL, ylab=NULL, diag=TRUE, ...)
-rotDI(data, fc, region, col.up="red", col.down="blue",
-    background="grey70", zlim=NULL, xlab=NULL, ylab="Gap", ...)
+plotDI(data, fc, first.region, second.region=first.region, col.up="red", 
+    col.down="blue", background="grey70", zlim=NULL, xlab=NULL, ylab=NULL, 
+    diag=TRUE, ...)
 
+rotDI(data, fc, region, col.up="red", col.down="blue", background="grey70", 
+    zlim=NULL, xlab=NULL, max.height=NULL, ylab="Gap", ...)
 }
 
 \arguments{
@@ -26,6 +26,7 @@ rotDI(data, fc, region, col.up="red", col.down="blue",
 	\item{background}{any type of R color, specifying the background color of the interaction space}
 	\item{zlim}{a numeric scalar indicating the maximum absolute log-fold change}
 	\item{xlab}{character string for the x-axis label on the plot, defaults to the first chromosome name}
+    \item{max.height}{a numeric scalar indicating the y-axis limit for \code{rotPlaid}}
 	\item{ylab}{character string for the y-axis label on the plot, defaults to the second chromosome name in \code{plotDI}}
 	\item{diag}{a logical scalar specifying whether boxes should be shown above the diagonal for intra-chromosomal plots in \code{plotDI}}
 	\item{...}{other named arguments to be passed to \code{\link{plot}}}
