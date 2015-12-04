@@ -2,12 +2,15 @@
 \title{diffHic News}
 \encoding{UTF-8}
 
-\section{Version 1.3.1}{\itemize{
+\section{Version 1.3.3}{\itemize{
 \item 
 Deprecated DIList objects and methods in favour of InteractionSet objects.
 
 \item
 marginCounts() now returns a RangedSummarizedExperiment for all bins.
+
+\item
+Added the max.height argument to the rotPlaid() and rotDI() functions.
 
 \item
 Updated user's guide, documentation and tests.
