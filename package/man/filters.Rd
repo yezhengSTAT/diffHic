@@ -68,9 +68,10 @@ set.seed(138153)
 npairs <- 500
 all.anchor1 <- sample(length(regions), npairs, replace=TRUE)
 all.anchor2 <- as.integer(runif(npairs, 1, all.anchor1+1))
-y <- InteractionSet(matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4), 
-    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions, mode="strict"),
-    colData=DataFrame(totals=colSums(assay(y))), metadata=List(width=1))
+counts <- matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4) 
+y <- InteractionSet(counts, GInteractions(anchor1=all.anchor1, 
+        anchor2=all.anchor2, regions=regions, mode="strict"),
+    colData=DataFrame(totals=colSums(counts)), metadata=List(width=1))
 
 # Requiring at least 1.5-fold change.
 direct <- filterDirect(y)
