@@ -70,8 +70,7 @@ all.anchor1 <- sample(length(regions), npairs, replace=TRUE)
 all.anchor2 <- as.integer(runif(npairs, 1, all.anchor1+1))
 y <- InteractionSet(matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4), 
     GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions, mode="strict"),
-    metadata=List(width=1))
-y$totals <- colSums(assay(y))
+    colData=DataFrame(totals=colSums(assay(y))), metadata=List(width=1))
 
 # Requiring at least 1.5-fold change.
 direct <- filterDirect(y)
