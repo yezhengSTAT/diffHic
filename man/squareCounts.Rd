@@ -18,7 +18,7 @@ squareCounts(files, param, width=50000, filter=1L)
 
 \value{
 An InteractionSet object is returned containing the number of read pairs for each bin pair across all libraries.
-The genomic coordinates for each bin are also recorded.
+Bin pairs are stored as a StrictGInteractions object.
 }
 
 \details{
@@ -97,7 +97,8 @@ unlink(fout, recursive=TRUE)
 \seealso{
 \code{\link{preparePairs}},
 \code{\link{cutGenome}},
-\code{\link[InteractionSet]{InteractionSet-class}}
+\code{\link[InteractionSet]{InteractionSet-class}},
+\code{\link[InteractionSet]{StrictGInteractions-class}}
 }
 
 \references{

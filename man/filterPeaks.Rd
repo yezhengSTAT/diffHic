@@ -49,7 +49,7 @@ set.seed(23943)
 all.anchor1 <- sample(length(regions), 50, replace=TRUE)
 all.anchor2 <- as.integer(runif(50, 1, all.anchor1+1))
 data <- InteractionSet(matrix(rnbinom(200, mu=10, size=10), 50, 4), 
-    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions), 
+    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions, mode="strict"), 
     colData=DataFrame(totals=runif(4, 1e6, 2e6)), metadata=List(width=1))
 
 # Getting peaks.

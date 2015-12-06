@@ -230,7 +230,7 @@ Sample1     a       17            2
 > targets <- sample(npts, npairs, replace=TRUE)
 > dummy <- InteractionSet(matrix(as.integer(rpois(npairs*nlibs, runif(npairs, 10, 100))), nrow=npairs),
 +     colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)), 
-+     GInteractions(anchor1=anchors, anchor2=targets, regions=GRanges("chrA", IRanges(1:npts, 1:npts))))
++     GInteractions(anchor1=anchors, anchor2=targets, regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="strict"))
 > 
 > normOffsets(dummy)
 [1] 1.0797833 0.8315381 0.9929250 1.1216692

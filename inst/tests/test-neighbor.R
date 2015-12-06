@@ -40,7 +40,7 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 	indices <- unlist(sapply(chromos, FUN=function(x) { 1:x }), use.names=FALSE)
 	data <- InteractionSet(list(counts=counts), 
         GInteractions(anchor1=aid[chosen], anchor2=tid[chosen],
-            regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices))),
+            regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices)), mode="strict"),
         colData=DataFrame(totals=rep(1e6, nlibs)))
 	regions(data)$nfrags <- rep(1:3, length.out=nbins)
 	
