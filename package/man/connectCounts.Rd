@@ -19,6 +19,7 @@ connectCounts(files, param, regions, filter=1L, type="any", second.regions=NULL)
 
 \value{
 An InteractionSet is returned, specifying the number of read pairs in each library that are mapped between pairs of \code{regions}, or between \code{regions} and \code{second.regions}.
+Interacting regions are returned as a StrictGInteractions object containing the concatenated \code{regions} and \code{second.regions}.
 }
 
 \details{
@@ -69,7 +70,8 @@ Users should use the \code{is.second} field to identify the region from the seco
 \seealso{
 \code{\link{squareCounts}},
 \code{\link{findOverlaps}},
-\code{\link[InteractionSet]{InteractionSet-class}}
+\code{\link[InteractionSet]{InteractionSet-class}},
+\code{\link[InteractionSet]{StrictGInteractions-class}}
 }
 
 \author{Aaron Lun}

@@ -6,7 +6,7 @@ suppressWarnings(suppressPackageStartupMessages(require(diffHic)))
 # that just shouldn't be a practical concern.
 
 ghost <- InteractionSet(matrix(0, nrow=0, ncol=1), 
-    GInteractions(integer(0), integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5))),
+    GInteractions(integer(0), integer(0), regions=GRanges("chrA", IRanges(1:5, 1:5)), mode="strict"),
     colData=DataFrame(totals=0))
 
 getArea(ghost)

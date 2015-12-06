@@ -18,7 +18,7 @@ comp <- function(reference, widths, minbox=FALSE) {
 		oname <- paste0("w", w)
 		collected[[oname]] <- InteractionSet(list(counts=matrix(0L, nrow=n, ncol=1)), 
             colData=DataFrame(totals=100), 
-            GInteractions(anchor1=all.a, anchor2=all.t, regions=bindata$region), 
+            GInteractions(anchor1=all.a, anchor2=all.t, regions=bindata$region, mode="strict"), 
 			metadata=List(param=pairParam(fragments=cutted)))
 	}	
 

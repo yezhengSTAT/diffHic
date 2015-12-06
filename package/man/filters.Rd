@@ -69,7 +69,7 @@ npairs <- 500
 all.anchor1 <- sample(length(regions), npairs, replace=TRUE)
 all.anchor2 <- as.integer(runif(npairs, 1, all.anchor1+1))
 y <- InteractionSet(matrix(rnbinom(npairs*4, mu=10, size=10), npairs, 4), 
-    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions),
+    GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions, mode="strict"),
     metadata=List(width=1))
 y$totals <- colSums(assay(y))
 
@@ -93,7 +93,7 @@ npairs2 <- 20
 rep.anchor1 <- sample(length(rep.regions), npairs2, replace=TRUE)
 rep.anchor2 <- as.integer(runif(npairs2, 1, rep.anchor1+1))
 y2 <- InteractionSet(matrix(rnbinom(npairs2*4, mu=10*w^2, size=10), npairs2, 4), 
-    GInteractions(anchor1=rep.anchor1, anchor2=rep.anchor2, regions=rep.regions), 
+    GInteractions(anchor1=rep.anchor1, anchor2=rep.anchor2, regions=rep.regions, mode="strict"), 
     colData=DataFrame(totals=y$totals), metadata=List(width=w))
 
 direct2 <- filterDirect(y, reference=y2)

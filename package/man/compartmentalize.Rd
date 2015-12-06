@@ -81,7 +81,7 @@ data <- InteractionSet(
     matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
     GInteractions(anchor1=anchor1, anchor2=anchor2,
         regions=GRanges(c(rep("chrA", 80), rep("chrB", 20)), 
-            IRanges(c(1:80, 1:20), c(1:80, 1:20)))),
+            IRanges(c(1:80, 1:20), c(1:80, 1:20))), mode="strict"),
     colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)), metadata=List(width=1))
 data <- unique(data)
 
