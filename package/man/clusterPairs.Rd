@@ -64,7 +64,7 @@ all.anchor1 <- sample(length(regions), 50, replace=TRUE)
 all.anchor2 <- as.integer(runif(50, 1, all.anchor1+1))
 y <- InteractionSet(matrix(0, 50, 1), 
     GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, regions=regions),
-    metadata=List(width=1))
+    colData=DataFrame(lib.size=1000), metadata=List(width=1))
 
 # Clustering; note, small tolerances are used in this toy example.
 clusterPairs(y, tol=1)
@@ -81,7 +81,7 @@ rep.anchor1 <- sample(length(rep.regions), 10, replace=TRUE)
 rep.anchor2 <- as.integer(runif(10, 1, rep.anchor1+1))
 y2 <- InteractionSet(matrix(0, 10, 1), 
     GInteractions(anchor1=rep.anchor1, anchor2=rep.anchor2, regions=rep.regions), 
-    metadata=List(width=2))
+    colData=DataFrame(lib.size=1000), metadata=List(width=2))
 
 clusterPairs(y, y2, tol=1)
 clusterPairs(y, y2, tol=3)
