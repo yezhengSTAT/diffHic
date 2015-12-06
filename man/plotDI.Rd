@@ -69,7 +69,7 @@ regions <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 
 set.seed(3423)
 all.anchor1 <- sample(length(regions), 500, replace=TRUE)
 all.anchor2 <- as.integer(runif(500, 1, all.anchor1+1))
-out <- InteractionSet(matrix(0, 500, 1), 
+out <- InteractionSet(matrix(0, 500, 1), colData=DataFrame(lib.size=1000)
     GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, 
         regions=regions), metadata=List(width=1))
 fc <- runif(nrow(out), -2, 2)

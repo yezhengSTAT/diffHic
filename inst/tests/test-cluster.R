@@ -57,7 +57,7 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 		new.as <- reordered[new.as]
 		new.ts <- reordered[new.ts]
 		new.regs <- new.regs[o]
-		data <- InteractionSet(list(counts=matrix(0L, length(new.as), 1)), 
+		data <- InteractionSet(list(counts=matrix(0L, length(new.as), 1, dimnames=list(NULL, 1))), 
             GInteractions(anchor1=new.as, anchor2=new.ts, regions=new.regs))
 	}
 

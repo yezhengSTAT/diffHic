@@ -52,7 +52,7 @@ param <- pairParam(cuts)
 all.combos <- combn(length(cuts), 2) # Bin size of 1.
 y <- InteractionSet(matrix(0, ncol(all.combos), 1), 
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts),
-    metadata=List(param=param, width=1))
+    colData=DataFrame(lib.size=1000), metadata=List(param=param, width=1))
 
 a5 <- a/5
 b5 <- b/5
@@ -61,7 +61,7 @@ y2 <- InteractionSet(matrix(0, ncol(all.combos2), 1),
     GInteractions(anchor1=all.combos2[2,], anchor2=all.combos2[1,], 
 	regions=GRanges(rep(c("chrA", "chrB"), c(a5, b5)), 
 		IRanges(c((1:a5-1)*5+1, (1:b5-1)*5+1), c(1:a5*5, 1:b5*5)))),
-    metadata=List(param=param, width=5))
+     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=5))
 
 result1 <- data.frame(logFC=rnorm(nrow(y)), PValue=runif(nrow(y)), logCPM=0)
 result2 <- data.frame(logFC=rnorm(nrow(y2)), PValue=runif(nrow(y2)), logCPM=0)
@@ -81,7 +81,7 @@ y3 <- InteractionSet(matrix(0, ncol(all.combos3), 1),
     GInteractions(anchor1=all.combos3[2,], anchor2=all.combos3[1,], 
 	regions=GRanges(rep(c("chrA", "chrB"), c(a10, b10)), 
 		IRanges(c((1:a10-1)*10+1, (1:b10-1)*10+1), c(1:a10*10, 1:b10*10)))),
-    metadata=List(param=param, width=10))
+     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=10))
 result3 <- data.frame(logFC=rnorm(nrow(y3)), PValue=runif(nrow(y3)), logCPM=0)
 
 boxed <- boxPairs(y, y2, y3)
