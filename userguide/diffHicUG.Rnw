@@ -1571,6 +1571,14 @@ smoothScatter(margin.lr, after[,1]-after[,2], ylim=c(-4, 4), main="After",
 % }
 % @
 
+\subsection{Using alternative copy number definitions}
+The method above uses the marginal counts as a proxy for genomic coverage \cite{imakaev2012iterative}.
+Changes in the marginal counts can be used as a proxy for change in the copy number between samples.     
+In most cases, this is an effective and sufficient strategy as exact quantification of the copy number difference is not required.
+However, external information can also be used, based on copy number arrays or genomic sequencing data for each sample.
+The (relative) copy number for each bin/region in each sample can be stored in a \code{RangedSummarizedExperiment} and passed to \code{normalizeCNV} as shown above.
+This may be more accurate as it avoids potential problems from interaction-specific effects on the marginal counts.
+
 \chapter{Modelling biological variability}
 
 \begin{combox}
