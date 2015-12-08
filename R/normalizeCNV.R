@@ -7,8 +7,11 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500, ...)
 #
 # written by Aaron Lun
 # created 11 September 2014
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
+    # Checking for proper type.
+    .check_StrictGI(data)
+
 	cont.cor <- 0.5
 	cont.cor.scaled <- cont.cor * data$totals/mean(data$totals)
 	ab <- aveLogCPM(assay(data), lib.size=data$totals, prior.count=cont.cor)
@@ -66,11 +69,13 @@ matchMargins <- function(data, margins)
 #
 # written by Aaron Lun
 # created 17 September 2014	
-# last modified 22 November 2015 
+# last modified 8 December 2015 
 {
-	# Checking to ensure that the regions are the same, and matching otherwise.
+    .check_StrictGI(data)
     anchor1 <- anchors(data, type="first", id=TRUE)
     anchor2 <- anchors(data, type="second", id=TRUE)
+
+	# Checking to ensure that the regions are the same, and matching otherwise.
 	if (any(regions(data)!=rowRanges(margins))) {
         m <- match(regions(data), rowRanges(margins))
         anchor1 <- m[anchor1]

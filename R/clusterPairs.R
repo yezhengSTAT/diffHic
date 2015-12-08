@@ -7,13 +7,14 @@ clusterPairs <- function(..., tol, upper=1e6)
 #
 # written by Aaron Lun
 # created 6 December 2013
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
 	tol <- as.integer(tol)
 	stopifnot(tol>=0L) # Minimum overlap not supported.
 	upper <- as.integer(upper)
 
 	all.data <- list(...)
+    lapply(all.data, FUN=.check_StrictGI)
 	achrs <- tchrs <- astarts <- aends <- tstarts <- tends <- list()
 	for (x in seq_along(all.data)) {
 		data <- all.data[[x]]

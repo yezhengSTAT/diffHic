@@ -40,8 +40,9 @@ getArea <- function(data, bp=TRUE)
 # 
 # written by Aaron Lun
 # created 30 July 2014
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
 	ax <- anchors(data, type="first", id=TRUE)
 	tx <- anchors(data, type="second", id=TRUE)
 	reg <- regions(data)

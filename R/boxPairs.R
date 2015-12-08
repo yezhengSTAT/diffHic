@@ -5,16 +5,18 @@ boxPairs <- function(..., reference, minbox=FALSE)
 #
 # written by Aaron Lun
 # created 3 June 2014
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
 	all.hits <- list(...)
+    lapply(all.hits, FUN=.check_StrictGI)
 	nk <- length(all.hits)
 	if (missing(reference)) { 
 		reference <- max(sapply(all.hits, FUN=function(x) { metadata(x)$width }))
 	}
 	fragments <- metadata(all.hits[[1]])$param$fragments
 	for (x in all.hits[-1]) { 
-		if (!identical(metadata(x)$param$fragments, fragments)) {
+        curfrag <- metadata(x)$param$fragments
+		if (length(curfrag)!=length(fragments) || any(curfrag!=fragments)) { 
 			stop("fragment boundaries should be the same between DIList objects")
 		}
 	}
@@ -89,3 +91,14 @@ boxPairs <- function(..., reference, minbox=FALSE)
 	}
 	return(list(indices=indices, anchor1=anchors, anchor2=targets))
 }
+
+.check_StrictGI <- function(x) {
+    if (!is(x, "InteractionSet")) { 
+        stop("input object must be an InteractionSet")
+    } 
+    if (!is(interactions(x), "StrictGInteractions")) { 
+        stop("'interactions' slot of InteractionSet must be a 'StrictGInteractions'")
+    }
+    invisible(return(NULL))
+}
+

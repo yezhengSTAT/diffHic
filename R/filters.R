@@ -6,8 +6,10 @@ filterDirect <- function(data, prior.count=2, reference=NULL)
 #
 # written by Aaron Lun
 # created 5 March 2015
-# last modified 24 June 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
+
 	if (!is.null(reference)) { 
 		actual.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
 		ref <- Recall(reference, prior.count=prior.count)
@@ -20,7 +22,7 @@ filterDirect <- function(data, prior.count=2, reference=NULL)
 	}
 
 	all.chrs <- seqnames(regions(data))
-	is.inter <- as.logical(all.chrs[anchors(data, type="first", id=TRUE)]!=all.chrs[anchors(data, type="second", id=TRUE)])
+	is.inter <- !intrachr(data)
 	ave.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
 
 	threshold <- .getInterThreshold(all.chrs, ave.ab[is.inter],
@@ -78,8 +80,10 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
 #
 # written by Aaron Lun
 # created 5 March 2015
-# last modified 22 July 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
+
 	if (!is.null(reference)) {
 		actual.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
 		actual.dist <- log10(pairdist(data, type="mid") + .getBinSize(data))
@@ -94,7 +98,7 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
 			prior.count=prior.count, scaling=scaling)
 		return(list(abundances=actual.ab, threshold=adj.thresh, log.distance=actual.dist, ref=ref)) 
 	}
-
+        
 	dist <- pairdist(data, type="mid")
 	log.dist <- log10(dist + .getBinSize(data))
 	ave.ab <- scaledAverage(asDGEList(data), prior.count=prior.count)
@@ -125,7 +129,7 @@ filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)
 	}
 
 	# Using the direct threshold.
-	is.inter <- is.na(log.dist)
+	is.inter <- is.na(dist)
 	if (any(is.inter)) { 
 		direct.threshold <- .getInterThreshold(seqnames(regions(data)), ave.ab[is.inter], empty=empty)
 		trend.threshold[is.inter] <- direct.threshold
@@ -141,7 +145,10 @@ filterDiag <- function(data, by.dist=0, by.diag=0L, dist, ...)
 #
 # written by Aaron Lun
 # created 6 October 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
+
 	if (missing(dist)) { 
 		dist <- pairdist(data, ...) 
 	} else {
