@@ -38,6 +38,7 @@ correctedContact <- function(data, iterations=50, exclude.local=1, ignore.low=0.
   	winsor.high <- as.double(winsor.high)
 	if (winsor.high >= 1) { stop("proportion of high coverage interactions to winsorize should be less than 1") }
 	exclude.local <- as.integer(exclude.local)
+    .check_StrictGI(data)
     
 	# Computing average counts, with or without distance correction.
 	if (dist.correct) { 

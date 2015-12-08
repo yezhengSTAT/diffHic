@@ -5,13 +5,14 @@ enrichedPairs <- function(data, flank=5, exclude=0, prior.count=2, abundances=NU
 #
 # written by Aaron Lun
 # created 23 April 2014
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
 	flank <- as.integer(flank)
 	exclude <- as.integer(exclude)
 	if (flank <= 0L) { stop("flank width must be a positive integer") }
 	if (exclude < 0L) { stop("exclude width must be a positive integer") }
 	if (flank <= exclude) { stop("exclude width must be less than the flank width") }
+    .check_StrictGI(data)
 	
 	rdata <- .splitByChr(regions(data))
 	last.id <- rdata$last
@@ -73,8 +74,10 @@ filterPeaks <- function(data, enrichment, min.enrich=log2(1.5), min.count=5, min
 # 
 # written by Aaron Lun
 # created 23 March 2015
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
+
 	keep <- enrichment > min.enrich 
 	if (!is.null(min.count)) { 
         y <- asDGEList(data)

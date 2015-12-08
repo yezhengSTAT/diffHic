@@ -164,9 +164,12 @@ plotDI <- function(data, fc, first.region, second.region=first.region,
 #
 # written by Aaron Lun
 # created 21 November 2014
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
-	first.chr <- as.character(seqnames(first.region))
+    # Checking for proper type.
+    .check_StrictGI(data)
+	
+    first.chr <- as.character(seqnames(first.region))
 	second.chr <- as.character(seqnames(second.region))
 	first.start <- start(first.region)
 	first.end <- end(first.region)

@@ -5,8 +5,10 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 #
 # written by Aaron Lun
 # created 26 May 2015
-# last modified 22 November 2015
+# last modified 8 December 2015
 {
+    .check_StrictGI(data)
+
 	is.intra <- intrachr(data)
 	data <- data[is.intra,]
 	if (dist.correct) {
