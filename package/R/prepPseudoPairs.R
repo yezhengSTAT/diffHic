@@ -1,4 +1,4 @@
-prepPseudoPairs <- function(bam, param, file, dedup=TRUE, yield=1e7, ichim=TRUE, chim.span=1000, minq=NA)
+prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=1000, minq=NA, output.dir=NULL)
 # This function acts the same as preparePairs, but it assumes that you're
 # putting things into contiguous bins across the genome. The idea is to
 # allow DNase-digested Hi-C experiments to fit in the pipeline, where reads
@@ -6,7 +6,7 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, yield=1e7, ichim=TRUE,
 #
 # written by Aaron Lun
 # created 27 March 2015
-# last modified 22 July 2015
+# last modified 9 December 2015
 {
 	fragments <- param$fragments
 	n.per.chr <- runLength(seqnames(fragments))
@@ -24,10 +24,15 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, yield=1e7, ichim=TRUE,
 
 	# Checking consistency between SAM chromosome lengths and the ones in the cuts.
 	chromosomes<-scanBamHeader(bam)[[1]]$targets
-	if (!all(names(chromosomes) %in% chrs)) { stop("missing chromosomes in cut site list") }
-	for (x in seq_along(chrs)) {
-		if (chromosomes[[chrs[x]]]!=end(fragments)[last.in.chr[x]]) {
-			stop("length of ", chrs[x], " is not consistent between BAM file and fragment ranges")
+    ref.chrs <- names(chromosomes)
+    m <- match(ref.chrs, chrs)
+    if (any(is.na(m))) { stop("missing chromosomes in cut site list") }
+
+    n.per.chr <- n.per.chr[m] # Rearranging so that BAM alignment TIDs refer to the correct chromosomes.
+    endpoints <- end(fragments)[last.in.chr[m]]   
+	for (x in seq_along(ref.chrs)) {
+		if (chromosomes[x]!=endpoints[x]) {
+			stop("length of ", ref.chrs[x], " is not consistent between BAM file and fragment ranges")
 		}
 	}
 
@@ -36,15 +41,21 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, yield=1e7, ichim=TRUE,
 	ichim <- as.logical(ichim)
 	chim.span <- as.integer(chim.span)
 	dedup <- as.logical(dedup)
-	FUN <- function(read.pair.len, cur.chrs, out) {
-		collated <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, read.pair.len, cur.chrs,
-			out$pos, out$flag, out$cigar, out$mapq, ichim, chim.span, minq, dedup)
-	}
 
-	# Cleaning up.
-	output <- .innerPrepLoop(bam=bam, file=file, chrs=chrs, chr.start=before.first, FUN=FUN, yield=yield)
-	output$same.id <- NULL
-	return(output)
+    # Setting up the output directory.
+    if (is.null(output.dir)) { 
+        output.dir <- tempfile(tmpdir=".")
+    }
+    if (file.exists(output.dir)) { 
+        stop("output directory already exists")
+    }
+    dir.create(output.dir)
+    on.exit({ unlink(output.dir, recursive=TRUE) })
+    prefix <- file.path(output.dir, "")
+
+    out <- .Call(cxx_report_hic_pairs, scuts, ecuts, bam, prefix, !ichim, chim.dist, minq, dedup)
+    if (is.character(out)) { stop(out) }
+    .process_output(out, file, ref.chrs, before.first)
 }
 
 segmentGenome <- function(bs, size=500) 
