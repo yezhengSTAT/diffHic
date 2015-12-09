@@ -1,5 +1,8 @@
 #include "diffhic.h"
 #include <cctype>
+#include <cstdio>
+#include <cstring>
+#include "sam.h"
 
 /***********************************************************************
  * Finds the fragment to which each read (or segment thereof) belongs.
@@ -8,28 +11,37 @@
 class base_finder {
 public:
 	base_finder() {}
-	virtual size_t nchrs() const { return pos.size(); }
+    size_t nchrs() const { return pos.size(); }
+    const char* get_rname(const int i) const { return pos[i].rname; }
 	virtual int find_fragment(const int&, const int&, const bool&, const int&) const = 0;
+    virtual ~base_finder() {};
 protected:
 	struct chr_stats {
-		chr_stats(const int* s, const int* e, const int& l) : start_ptr(s), end_ptr(e), num(l) {}
+		chr_stats(const char * r, const int* s, const int* e, const int& l) : rname(r), start_ptr(s), end_ptr(e), num(l) {}
 		const int* start_ptr;
 		const int* end_ptr;
+        const char * rname;
 		int num;
 	};
 	std::deque<chr_stats> pos;
+    int check_names(SEXP);
 };
+
+int base_finder::check_names(SEXP chrnames) {
+    if (!isString(chrnames)) { throw std::runtime_error("chromosome names should be a character string"); }
+    return LENGTH(chrnames);
+}
 
 class fragment_finder : public base_finder {
 public:
-	fragment_finder(SEXP, SEXP); // Takes a list of vectors of positions and reference names for those vectors.
+	fragment_finder(SEXP, SEXP, SEXP); // Takes a list of vectors of positions and reference names for those vectors.
 	int find_fragment(const int&, const int&, const bool&, const int&) const;
 };
 
-fragment_finder::fragment_finder(SEXP starts, SEXP ends) {
+fragment_finder::fragment_finder(SEXP chrnames, SEXP starts, SEXP ends) {
+    const int nnames=check_names(chrnames);
 	if (!isNewList(starts) || !isNewList(ends)) { throw std::runtime_error("start/end positions should each be a list of integer vectors"); }
-	const int nnames=LENGTH(starts);
-	if (nnames!=LENGTH(ends)) { throw std::runtime_error("number of names does not correspond to number of start/end position vectors"); }
+	if (nnames!=LENGTH(starts) || nnames!=LENGTH(ends)) { throw std::runtime_error("number of names does not correspond to number of start/end position vectors"); }
 	
 	for (int i=0; i<nnames; ++i) {
 		SEXP current1=VECTOR_ELT(starts, i);
@@ -38,7 +50,7 @@ fragment_finder::fragment_finder(SEXP starts, SEXP ends) {
 		if (!isInteger(current2)) { throw std::runtime_error("end vector should be integer"); }
 		const int ncuts=LENGTH(current1);
 		if (LENGTH(current2)!=ncuts) { throw std::runtime_error("start/end vectors should have the same length"); }
-		pos.push_back(chr_stats(INTEGER(current1), INTEGER(current2), ncuts));	
+		pos.push_back(chr_stats(CHAR(STRING_ELT(chrnames, i)), INTEGER(current1), INTEGER(current2), ncuts));	
 	}
 	return;
 }
@@ -77,47 +89,24 @@ int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, co
  * Parses the CIGAR string to extract the alignment length, offset from 5' end of read.
  ***********************************************************************/
 
-void parse_cigar (const char* cigar, int& alen, int& offset, const bool& reverse) {
-	alen=0;
-	offset=0;
-	int numero=0;
-    while ((*cigar)!='\0') {
-        if (isdigit(*cigar)) {
-            numero*=10;
-            numero+=int((*cigar)-'0');
-        } else {
-            switch (*cigar) {
-		/* If we've already got some non-clipped values, it means that we're now looking at
-		 * the right hand side  of the alignment. Which we don't really need if the read is
-		 * forward (as we only want the stuff on the left, as it's equal to the 5' offset).
-		 * So we can just return.
-		 */
-                case 'H':
-			if (alen && !reverse) { return; }					
-			offset+=numero;
-			break;				
-		case 'S':
-			if (alen && !reverse) { return; }					
-                	break;
-                /* We want the length of the alignment relative to the reference, so we ignore insertions
-                 * which are only present in the query. We also ignore padded deletions, as they're talking
-                 * about something else. We consider deletions from the reference and skipped regions as being 
-                 * part of the query.
-                 *
-                 * Note the lack of breaks. It's deliberate, because in all non-clipping cases, we want to check
-                 * whether we need to reset the offset (if we're looking for the offset on the right of the
-                 * alignment i.e. the 5' offset on the reverse read).
-                 */
-                case 'D': case 'M': case 'X': case '=': case 'N':
-                	alen+=numero;
-                default:
-			if (reverse) { offset=0; }
-                	break;
+void parse_cigar (const bam1_t* read, int& alen, int& offset, const bool& reverse) {
+    const uint32_t* cigar=bam_get_cigar(read);
+	alen=bam_cigar2rlen((read->core).n_cigar, cigar);
+    offset=0;
+
+    if ((read->core).n_cigar) { 
+        if (reverse) {
+            const uint32_t last=cigar[(read->core).n_cigar - 1];
+            if (bam_cigar_op(last)==BAM_CHARD_CLIP) {
+                offset=bam_cigar_oplen(last);  
             }
-            numero=0;
+        } else {
+            const uint32_t first=cigar[0];
+            if (bam_cigar_op(first)==BAM_CHARD_CLIP) {
+                offset=bam_cigar_oplen(first);
+            }
         }
-        ++cigar;
-    }
+    } 
 	return;
 }
 
@@ -157,10 +146,6 @@ status get_status (const segment& left, const segment& right) {
 		default: return ISPET;
 	}
 }
-
-struct valid_pair {
-	int anchor, target, apos, tpos, alen, tlen;
-};
 
 /***********************************************
  * Something to identify invalidity of chimeric read pairs.
@@ -208,78 +193,186 @@ private:
 };
 
 /************************
+ * Something to read in BAM files; copied shamelessly from the 'bamsignals' package
+ ************************/
+
+class Bamfile {
+public:
+    Bamfile(const char * path) : holding(false) { 
+        in = sam_open(path, "rb");
+        if (in == NULL) { 
+            std::stringstream out;
+            out << "failed to open BAM file at '" << path << "'";
+            throw std::runtime_error(out.str());
+        }
+        try {
+            header=sam_hdr_read(in);
+        } catch (std::exception &e) {
+            sam_close(in);
+            throw;
+        }   
+        read=bam_init1();
+        next=bam_init1();
+        return;
+    }
+    ~Bamfile(){
+        sam_close(in);
+        bam_hdr_destroy(header);
+        bam_destroy1(read);
+        bam_destroy1(next);
+    }
+
+    bool read_alignment() {
+        if (holding) {
+            bam1_t* tmp;            
+            tmp=read;
+            read=next;
+            next=tmp;
+            holding=false;
+        } else {
+            if (sam_read1(in, header, read) < 0) { return false; }
+        }
+        return true;
+    }
+       
+    void put_back() {
+        bam1_t* tmp;            
+        tmp=read;
+        read=next;
+        next=tmp;
+        holding=true;
+        return;
+    } 
+
+    samFile* in;
+    bam_hdr_t* header;
+    bam1_t* read, *next;
+    bool holding;
+};
+
+class OutputFile {
+public: 
+    OutputFile(const char* p, const int c1, const int c2) : out(NULL) { 
+        std::stringstream converter;
+        converter << p << c1 << "_" << c2;
+        path=converter.str();
+        return;
+    }
+    void add(int anchor, int target, int apos, int tpos, int alen, int tlen, bool arev, bool trev) {
+        if (out==NULL) { 
+            out = std::fopen(path.c_str(), "w");
+            if (out==NULL) {
+                std::stringstream err;
+                err << "failed to open output file at '" << path << "'"; 
+                throw std::runtime_error(err.str());
+            }
+        }
+		if (alen<0 || tlen<0) { throw std::runtime_error("alignment lengths should be positive"); }
+        if (arev) { alen *= -1; } 
+        if (trev) { tlen *= -1; } 
+        fprintf(out, "%i\t%i\t%i\t%i\t%i\t%i\n", anchor, target, apos, tpos, alen, tlen);
+        return;
+    }
+    ~OutputFile() {
+        if (out!=NULL) { std::fclose(out); }
+    }
+private:
+    FILE * out;
+    std::string path;
+};
+
+/************************
  * Main loop.
  ************************/
 
 SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)(const segment&, const segment&), const check_invalid_chimera * const icptr,
-		SEXP pairlen, SEXP chrs, SEXP pos, SEXP flag, SEXP cigar, SEXP mapqual, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
+        SEXP bamfile, SEXP prefix, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
 
-	// Checking input values.
-	if (!isInteger(pairlen)) { throw std::runtime_error("length of pairs must be an integer vector"); }
-	if (!isInteger(chrs)) { throw std::runtime_error("chromosomes must be an integer vector"); }
-	if (!isInteger(pos)) { throw std::runtime_error("positions must be an integer vector"); }
-	if (!isInteger(flag)) { throw std::runtime_error("SAM flags must be an integer vector"); }
-	if (!isString(cigar)) { throw std::runtime_error("CIGAR strings must be a character vector"); }
-	if (!isInteger(mapqual)) { throw std::runtime_error("mapping quality must be an integer vector"); }
-	const int nreads=LENGTH(chrs);
-	if (LENGTH(pos)!=nreads || LENGTH(flag)!=nreads || LENGTH(cigar)!=nreads || LENGTH(mapqual)!=nreads) {
-		throw std::runtime_error("lengths of vectors of read information are not consistent");
-	}
-	if (!isLogical(chimera_strict) || LENGTH(chimera_strict)!=1) { throw std::runtime_error("chimera removal specification should be a logical scalar"); }
-	const int npairs=LENGTH(pairlen);
+    // Checking input values.
+    if (!isString(bamfile) || LENGTH(bamfile)!=1) { throw std::runtime_error("BAM file path should be a character string"); }
+    if (!isString(prefix) || LENGTH(prefix)!=1) { throw std::runtime_error("output file prefix should be a character string"); }
+    if (!isLogical(chimera_strict) || LENGTH(chimera_strict)!=1) { throw std::runtime_error("chimera removal specification should be a logical scalar"); }
 	if (!isLogical(do_dedup) || LENGTH(do_dedup)!=1) { throw std::runtime_error("duplicate removal specification should be a logical scalar"); }
 	if (!isInteger(minqual) || LENGTH(minqual)!=1) { throw std::runtime_error("minimum mapping quality should be an integer scalar"); }
 
 	// Initializing pointers.
-	const int* cptr=INTEGER(chrs);
-	const int* pptr=INTEGER(pos);
-	const int* fptr=INTEGER(flag);
-	const int* qptr=INTEGER(mapqual);
+    Bamfile input(CHAR(STRING_ELT(bamfile, 0)));
 	const bool rm_invalid=asLogical(chimera_strict);
 	const bool rm_dup=asLogical(do_dedup);
 	const int minq=asInteger(minqual);
 	const bool rm_min=!ISNA(minq);
-	const int * plptr=INTEGER(pairlen);
+
+    // Initializing chromosome name conversion table.
 	const size_t nc=ffptr->nchrs();
+    const int32_t ntargets=input.header -> n_targets;
+    int* to_standard=(int*)R_alloc(int(ntargets), sizeof(int));
+    {
+        std::map<std::string, int> standard_names;
+        for (size_t i=0; i<nc; ++i) { 
+            standard_names[std::string(ffptr->get_rname(i))]=i;
+        }
+        std::map<std::string, int>::const_iterator itsn;
+        for (int i=0; i<ntargets; ++i) { 
+            itsn=standard_names.find(std::string((input.header->target_name)[i]));
+            to_standard[i]=(itsn!=standard_names.end() ? itsn->second : -1);
+        }
+    }
 
 	// Constructing output containers
-	std::deque<std::deque<std::deque<valid_pair> > > collected(nc);
-	for (size_t i=0; i<nc; ++i) { collected[i].resize(i+1); }
-	std::deque<segment> read1, read2;
-	segment current;
-	valid_pair curpair;
+    const char* oprefix=CHAR(STRING_ELT(prefix, 0));
+	std::deque<std::deque<OutputFile> > collected(nc);
+	for (size_t i=0; i<nc; ++i) { 
+        for (size_t j=0; j<=i; ++j) { 
+            collected[i].push_back(OutputFile(oprefix, i, j));
+        }
+    }
 	int single=0;
 	int total=0, dupped=0, filtered=0, mapped=0;
 	int dangling=0, selfie=0;
 	int total_chim=0, mapped_chim=0, multi_chim=0, inv_chimeras=0;
 
-	// Running through all reads and identifying the interaction they represent.
-	int index=0, limit, pindex=0;
-	while (index < nreads) {
-		read1.clear();
-		read2.clear();
-		if (pindex==npairs) { throw std::runtime_error("ran out of pairs before running out of reads"); }
-		const int& curpl=plptr[pindex];
-		++pindex;
-		limit=index+curpl;
-		if (limit > nreads) { throw std::runtime_error("ran out of reads before running out of pairs"); }
-
-		// Various flags that will be needed.
-		bool isdup=false, isunmap=false, ischimera=false,
+    bool isempty=true, isdup=false, isunmap=false, ischimera=false,
 		     isfirst=false, hasfirst=false, hassecond=false,
-		     curdup=false, curunmap=false;
+		     curdup=false, curunmap=false, jump_to_next=false, should_be_added=false;
+   	std::deque<segment> read1, read2;
+	segment current;
+    std::string qname="";
 
-		// Running through and collecting read segments.
-		while (index < limit) {
-			const int& curflag=fptr[index];
-			current.reverse=(curflag & 0x10);
-			current.chrid=cptr[index];
-			current.pos=pptr[index];
-			parse_cigar(CHAR(STRING_ELT(cigar, index)), current.alen, current.offset, current.reverse);
+    while (1) {
+        isempty=true;
+        isdup=isunmap=ischimera=isfirst=hasfirst=hassecond=curdup=curunmap=false;
+        read1.clear();
+        read2.clear();
+
+        while (input.read_alignment()) {
+            isempty=false;  
+            if (std::strcmp(bam_get_qname(input.read), qname.c_str())!=0) { 
+                input.put_back(); 
+                qname=bam_get_qname(input.read);
+                break;
+            }
+
+            // Pulling out positional information:
+			current.reverse=bool(bam_is_rev(input.read));
+            const int32_t& curtid=(input.read -> core).tid;
+            if (curtid==-1) { // unmapped
+                current.chrid=0;
+            } else if (curtid >= ntargets) {
+                throw std::runtime_error("read tid out of range of defined chromosomes in BAM file");
+            } else {
+                current.chrid=to_standard[curtid];
+                if (current.chrid<0) { 
+                    std::stringstream err;
+                    err << "unrecognised chromosome '" << (input.header->target_name)[curtid] << "' in the BAM file"; 
+                    throw std::runtime_error(err.str());
+                }
+            }
+			current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
+			parse_cigar(input.read, current.alen, current.offset, current.reverse);
 
 			// Checking how we should proceed; whether we should bother adding it or not.
-			curdup=(curflag & 0x400);
-			curunmap=(curflag & 0x4 || (rm_min && qptr[index] < minq));
+			curdup=bool((input.read -> core).flag & BAM_FDUP);
+			curunmap=(bool((input.read -> core).flag & BAM_FUNMAP) || (rm_min && (input.read -> core).qual < minq));
 			if (current.offset==0) {
 				if (curdup) { isdup=true; }
 				if (curunmap) { isunmap=true; }
@@ -287,22 +380,21 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 				ischimera=true;
 			}
 
-			// Checking what it is.
-			isfirst = (curflag & 0x40);
+			// Checking what the read is (first or second).
+			isfirst=bool((input.read -> core).flag & BAM_FREAD1);
 			if (isfirst) { hasfirst=true; }
 			else { hassecond=true; }
 
 			// Checking which deque to put it in, if we're going to keep it.
-			if (! (curdup && rm_dup) && ! curunmap) {
-				std::deque<segment>& current_reads=(isfirst ? read1 : read2);
-				if (current.offset==0) {
-					current_reads.push_front(current);
-				} else {
-					current_reads.push_back(current);
-				}
-			}
-			++index;
-		}
+            if (! (curdup && rm_dup) && ! curunmap) {
+                std::deque<segment>& current_reads=(isfirst ? read1 : read2);
+                if (current.offset==0) { current_reads.push_front(current); } 
+                else { current_reads.push_back(current); }
+            }
+        }
+
+        // If we processed nothing, then it's the end of the file and we break.
+        if (isempty) { break; }
 
 		// Skipping if it's a singleton; otherwise, reporting it as part of the total read pairs.
 		if (! (hasfirst && hassecond)) {
@@ -381,69 +473,16 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 			}
 		}
 		const segment& anchor_seg=(anchor ? read1.front() : read2.front());
-		const segment& target_seg=(anchor ? read2.front() : read1.front());
-		
-		curpair.anchor=anchor_seg.fragid;
-		curpair.target=target_seg.fragid;
-		curpair.apos=anchor_seg.pos;
-		curpair.alen=anchor_seg.alen;
-		if (anchor_seg.reverse) { curpair.alen*=-1; }
-		curpair.tpos=target_seg.pos;
-		curpair.tlen=target_seg.alen;
-		if (target_seg.reverse) { curpair.tlen*=-1; }
-
-		if (curpair.alen==0 || curpair.tlen==0) { throw std::runtime_error("alignment lengths of zero should not be present"); }
-		collected[anchor_seg.chrid][target_seg.chrid].push_back(curpair);
+		const segment& target_seg=(anchor ? read2.front() : read1.front());   
+        collected[anchor_seg.chrid][target_seg.chrid].add(anchor_seg.fragid, target_seg.fragid, 
+                anchor_seg.pos, target_seg.pos, anchor_seg.alen, target_seg.alen,
+                anchor_seg.reverse, target_seg.reverse);
 	}
 
-	// Checking if all pairs were used up.
-	if (pindex!=npairs) { throw std::runtime_error("ran out of reads before running out of pairs"); }
-
-	SEXP total_output=PROTECT(allocVector(VECSXP, 6));
+	SEXP total_output=PROTECT(allocVector(VECSXP, 4));
 	try {
-		// Checking how many are not (doubly) empty.
-		std::deque<std::pair<int, int> > good;
-		for (size_t i=0; i<nc; ++i) {
-			for (size_t j=0; j<=i; ++j) {
-				const std::deque<valid_pair>& curpairs=collected[i][j];
-				if (!curpairs.empty()) { good.push_back(std::make_pair(i, j)); }
-			}
-		}	
-
-		SET_VECTOR_ELT(total_output, 0, allocMatrix(INTSXP, good.size(), 2));
-		int* aptr=INTEGER(VECTOR_ELT(total_output, 0));
-		int* tptr=aptr+good.size();
-		SET_VECTOR_ELT(total_output, 1, allocVector(VECSXP, good.size()));
-		SEXP output=VECTOR_ELT(total_output, 1);
-
-		for (size_t i=0; i<good.size(); ++i) {
-			aptr[i]=good[i].first+1;
-			tptr[i]=good[i].second+1;
-
-			// Filling up those non-empty pairs of chromosomes.
-			std::deque<valid_pair>& curpairs=collected[good[i].first][good[i].second];
-			SET_VECTOR_ELT(output, i, allocMatrix(INTSXP, curpairs.size(), 6));
-			int* axptr=INTEGER(VECTOR_ELT(output, i));
-			int* txptr=axptr+curpairs.size();
-			int* apxptr=txptr+curpairs.size();
-			int* tpxptr=apxptr+curpairs.size();
-			int* afxptr=tpxptr+curpairs.size();
-			int* tfxptr=afxptr+curpairs.size();
-			for (size_t k=0; k<curpairs.size(); ++k) {
-				axptr[k]=curpairs[k].anchor+1;
-				txptr[k]=curpairs[k].target+1;
-				apxptr[k]=curpairs[k].apos;
-				tpxptr[k]=curpairs[k].tpos;
-				afxptr[k]=curpairs[k].alen;
-				tfxptr[k]=curpairs[k].tlen;
-			}
-
-			// Emptying out the container once we've processed it, to keep memory usage down.
-			std::deque<valid_pair>().swap(curpairs);
-		}
-
 		// Dumping mapping diagnostics.
-		SET_VECTOR_ELT(total_output, 2, allocVector(INTSXP, 4));
+		SET_VECTOR_ELT(total_output, 0, allocVector(INTSXP, 4));
 		int* dptr=INTEGER(VECTOR_ELT(total_output, 2));
 		dptr[0]=total;
 		dptr[1]=dupped;
@@ -451,16 +490,16 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 		dptr[3]=mapped;
 	
 		// Dumping the number of dangling ends, self-circles.	
-		SET_VECTOR_ELT(total_output, 3, allocVector(INTSXP, 2));
+		SET_VECTOR_ELT(total_output, 1, allocVector(INTSXP, 2));
 		int * siptr=INTEGER(VECTOR_ELT(total_output, 3));
 		siptr[0]=dangling;
 		siptr[1]=selfie;
 
 		// Dumping the number designated 'single', as there's no pairs.
-		SET_VECTOR_ELT(total_output, 4, ScalarInteger(single));
+		SET_VECTOR_ELT(total_output, 2, ScalarInteger(single));
 
 		// Dumping chimeric diagnostics.
-		SET_VECTOR_ELT(total_output, 5, allocVector(INTSXP, 4));
+		SET_VECTOR_ELT(total_output, 3, allocVector(INTSXP, 4));
 		int* cptr=INTEGER(VECTOR_ELT(total_output, 5));
 		cptr[0]=total_chim;
 		cptr[1]=mapped_chim;
@@ -474,10 +513,9 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	return total_output;
 }
 
-SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP pairlen, SEXP chrs, SEXP pos,
-		SEXP flag, SEXP cigar, SEXP mapqual, SEXP chimera_strict, SEXP chimera_span, 
-		SEXP minqual, SEXP do_dedup) try {
-	fragment_finder ff(start_list, end_list);
+SEXP report_hic_pairs (SEXP chrnames, SEXP start_list, SEXP end_list, SEXP bamfile, SEXP outfile, 
+        SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
+	fragment_finder ff(chrnames, start_list, end_list);
 	
 	check_invalid_by_fragid invfrag; // Bit clunky to define both, but easiest to avoid nested try/catch.
 	check_invalid_by_dist invdist(chimera_span);
@@ -485,8 +523,7 @@ SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP pairlen, SEXP chrs, 
 	if (invdist.get_span()==NA_INTEGER) { invchim=&invfrag; } 
 	else { invchim=&invdist; }
 	
-	return internal_loop(&ff, &get_status, invchim,
-		pairlen, chrs, pos, flag, cigar, mapqual, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &get_status, invchim, bamfile, outfile, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
@@ -497,18 +534,22 @@ SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP pairlen, SEXP chrs, 
 
 class simple_finder : public base_finder {
 public:
-	simple_finder(SEXP, SEXP);
+	simple_finder(SEXP, SEXP, SEXP);
 	int find_fragment(const int&, const int&, const bool&, const int&) const;
 private:
 	int bin_width;
 };
 
-simple_finder::simple_finder(SEXP n_per_chr, SEXP bwidth) {
+simple_finder::simple_finder(SEXP chrnames, SEXP n_per_chr, SEXP bwidth) {
 	if (!isInteger(bwidth)|| LENGTH(bwidth)!=1) { throw std::runtime_error("bin width must be an integer scalar"); }
 	bin_width=asInteger(bwidth);
-	if (!isInteger(n_per_chr)) { throw std::runtime_error("number of fragments per chromosome must be an integer vector"); }
-	const int* nptr=INTEGER(n_per_chr);
-	for (int i=0; i<LENGTH(n_per_chr); ++i) { pos.push_back(chr_stats(NULL, NULL, nptr[i])); }
+
+    const int nnames=check_names(chrnames);
+    if (!isInteger(n_per_chr)) { throw std::runtime_error("number of fragments per chromosome must be an integer vector"); }
+    if (LENGTH(n_per_chr)!=nnames) { throw std::runtime_error("length of bins per chromosome and chromosome names are not equal"); }
+
+    const int* nptr=INTEGER(n_per_chr);
+	for (int i=0; i<nnames; ++i) { pos.push_back(chr_stats(CHAR(STRING_ELT(chrnames, i)), NULL, NULL, nptr[i])); }
 	return;	
 }
 
@@ -533,13 +574,11 @@ status no_status_check (const segment& left, const segment& right) {
 	return NEITHER;
 }
 
-SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP pairlen, SEXP chrs, SEXP pos,
-		SEXP flag, SEXP cigar, SEXP mapqual, SEXP chimera_strict, SEXP chimera_span,
-		SEXP minqual, SEXP do_dedup) try {
-	simple_finder ff(num_in_chrs, bwidth);
+SEXP report_hic_binned_pairs (SEXP chrnames, SEXP num_in_chrs, SEXP bwidth, SEXP bamfile, SEXP outfile, 
+        SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
+	simple_finder ff(chrnames, num_in_chrs, bwidth);
 	check_invalid_by_dist invchim(chimera_span);
-	return internal_loop(&ff, &no_status_check, &invchim,
-		pairlen, chrs, pos, flag, cigar, mapqual, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &no_status_check, &invchim, bamfile, outfile, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
@@ -549,21 +588,28 @@ SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP pairlen, SEXP 
  *******************/
 
 SEXP test_parse_cigar (SEXP incoming, SEXP reverse) try {
-	if (!isString(incoming) || LENGTH(incoming)!=1) { throw std::runtime_error("need one cigar string"); }
+	if (!isString(incoming) || LENGTH(incoming)!=1) { throw std::runtime_error("BAM file path should be a string"); }
 	if (!isLogical(reverse) || LENGTH(reverse)!=1) { throw std::runtime_error("need a reverse specifier"); }
+    
+    Bamfile input(CHAR(STRING_ELT(incoming, 0)));
+    if (sam_read1(input.in, input.header, input.read)<0) { 
+        throw std::runtime_error("BAM file is empty");
+    } 
+
 	SEXP output=PROTECT(allocVector(INTSXP, 2));
 	int* optr=INTEGER(output);
 	int& alen=*optr;
 	int& offset=*(optr+1);
-	parse_cigar(CHAR(STRING_ELT(incoming, 0)), alen, offset, asLogical(reverse));
-	UNPROTECT(1);
+	parse_cigar(input.read, alen, offset, asLogical(reverse));
+
+    UNPROTECT(1);
 	return(output);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
 
-SEXP test_fragment_assign(SEXP starts, SEXP ends, SEXP chrs, SEXP pos, SEXP rev, SEXP len) try {
-	fragment_finder ff(starts, ends);
+SEXP test_fragment_assign(SEXP chrnames, SEXP starts, SEXP ends, SEXP chrs, SEXP pos, SEXP rev, SEXP len) try {
+	fragment_finder ff(chrnames, starts, ends);
 	if (!isInteger(chrs) || !isInteger(pos) || !isLogical(rev) || !isInteger(len)) { throw std::runtime_error("data types are wrong"); }
 	const int n=LENGTH(chrs);
 	if (n!=LENGTH(pos) || n!=LENGTH(rev) || n!=LENGTH(len)) { throw std::runtime_error("length of data vectors are not consistent"); }
