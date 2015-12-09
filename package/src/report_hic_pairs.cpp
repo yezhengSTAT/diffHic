@@ -81,13 +81,13 @@ int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, co
  * Parses the CIGAR string to extract the alignment length, offset from 5' end of read.
  ***********************************************************************/
 
-void parse_cigar (const bam1_t* read, int& alen, int& offset, const bool& reverse) {
+void parse_cigar (const bam1_t* read, int& alen, int& offset) {
     const uint32_t* cigar=bam_get_cigar(read);
 	alen=bam_cigar2rlen((read->core).n_cigar, cigar);
     offset=0;
 
     if ((read->core).n_cigar) { 
-        if (reverse) {
+        if (bam_is_rev(read)) { 
             const uint32_t last=cigar[(read->core).n_cigar - 1];
             if (bam_cigar_op(last)==BAM_CHARD_CLIP) {
                 offset=bam_cigar_oplen(last);  
@@ -262,7 +262,7 @@ public:
 		if (alen<0 || tlen<0) { throw std::runtime_error("alignment lengths should be positive"); }
         if (arev) { alen *= -1; } 
         if (trev) { tlen *= -1; } 
-        fprintf(out, "%i\t%i\t%i\t%i\t%i\t%i\n", anchor, target, apos, tpos, alen, tlen);
+        fprintf(out, "%i\t%i\t%i\t%i\t%i\t%i\n", anchor+1, target+1, apos, tpos, alen, tlen); // Get back to 1-indexing.
         return;
     }
     ~OutputFile() {
@@ -303,7 +303,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
             collected[i].push_back(OutputFile(oprefix, i, j));
         }
     }
-	int single=0;
+	int single=-1; // First one always reported as a singleton, as qname is empty.
 	int total=0, dupped=0, filtered=0, mapped=0;
 	int dangling=0, selfie=0;
 	int total_chim=0, mapped_chim=0, multi_chim=0, inv_chimeras=0;
@@ -341,7 +341,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
                 current.chrid=curtid;
             }
 			current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
-			parse_cigar(input.read, current.alen, current.offset, current.reverse);
+			parse_cigar(input.read, current.alen, current.offset);
             
 			// Checking how we should proceed; whether we should bother adding it or not.
 			curdup=bool((input.read -> core).flag & BAM_FDUP);
@@ -456,11 +456,16 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	try {
         // Saving all file names.
         SET_VECTOR_ELT(total_output, 0, allocVector(VECSXP, nc));
+        SEXP all_paths=VECTOR_ELT(total_output, 0);
         for (int i=0; i<nc; ++i) {
-            SET_VECTOR_ELT(total_output, i, allocVector(STRSXP, i+1));
-            SEXP current_paths=VECTOR_ELT(total_output, i);
+            SET_VECTOR_ELT(all_paths, i, allocVector(STRSXP, i+1));
+            SEXP current_paths=VECTOR_ELT(all_paths, i);
             for (int j=0; j<=i; ++j) {
-                SET_STRING_ELT(current_paths, j, mkChar(collected[i][j].path.c_str()));
+                if (collected[i][j].out!=NULL) {
+                    SET_STRING_ELT(current_paths, j, mkChar(collected[i][j].path.c_str()));
+                } else {
+                    SET_STRING_ELT(current_paths, j, mkChar(""));
+                }
             } 
         }
 
@@ -568,9 +573,8 @@ SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP bamfile, SEXP 
  * Testing functions.
  *******************/
 
-SEXP test_parse_cigar (SEXP incoming, SEXP reverse) try {
+SEXP test_parse_cigar (SEXP incoming) try {
 	if (!isString(incoming) || LENGTH(incoming)!=1) { throw std::runtime_error("BAM file path should be a string"); }
-	if (!isLogical(reverse) || LENGTH(reverse)!=1) { throw std::runtime_error("need a reverse specifier"); }
     
     Bamfile input(CHAR(STRING_ELT(incoming, 0)));
     if (sam_read1(input.in, input.header, input.read)<0) { 
@@ -581,7 +585,7 @@ SEXP test_parse_cigar (SEXP incoming, SEXP reverse) try {
 	int* optr=INTEGER(output);
 	int& alen=*optr;
 	int& offset=*(optr+1);
-	parse_cigar(input.read, alen, offset, asLogical(reverse));
+	parse_cigar(input.read, alen, offset);
 
     UNPROTECT(1);
 	return(output);
