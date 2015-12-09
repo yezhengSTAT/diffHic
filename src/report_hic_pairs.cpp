@@ -278,7 +278,7 @@ public:
  ************************/
 
 SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)(const segment&, const segment&), const check_invalid_chimera * const icptr,
-        SEXP bamfile, SEXP prefix, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
+        SEXP chr_converter, SEXP bamfile, SEXP prefix, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
 
     // Checking input values.
     if (!isString(bamfile) || LENGTH(bamfile)!=1) { throw std::runtime_error("BAM file path should be a character string"); }
@@ -293,8 +293,16 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	const bool rm_dup=asLogical(do_dedup);
 	const int minq=asInteger(minqual);
 	const bool rm_min=!ISNA(minq);
-	const size_t nc=ffptr->nchrs();
 
+    // Initializing the chromosome conversion table (to get from BAM TIDs to chromosome indices in the 'fragments' GRanges).
+	const size_t nc=ffptr->nchrs();
+    if (!isInteger(chr_converter)) { throw std::runtime_error("chromosome conversion table should be integer"); }
+    if (LENGTH(chr_converter)!=nc) { throw std::runtime_error("conversion table should have length equal to the number of chromosomes"); }
+    const int* converter=INTEGER(chr_converter);
+    for (size_t i=0; i<nc; ++i) {
+        if (converter[i]==NA_INTEGER || converter[i] < 0 || converter[i] >= nc) { throw std::runtime_error("conversion indices out of range"); }
+    }
+    
    	// Constructing output containers
     const char* oprefix=CHAR(STRING_ELT(prefix, 0));
 	std::deque<std::deque<OutputFile> > collected(nc);
@@ -338,7 +346,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
             } else if (curtid >= nc) {
                 throw std::runtime_error("read tid out of range of defined chromosomes in BAM file");
             } else {
-                current.chrid=curtid;
+                current.chrid=converter[curtid];
             }
 			current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
 			parse_cigar(input.read, current.alen, current.offset);
@@ -501,7 +509,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	return total_output;
 }
 
-SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP chrconvert, SEXP bamfile, SEXP outfile, 
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
 	fragment_finder ff(start_list, end_list);
 	
@@ -511,7 +519,7 @@ SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP bamfile, SEXP outfil
 	if (invdist.get_span()==NA_INTEGER) { invchim=&invfrag; } 
 	else { invchim=&invdist; }
 	
-	return internal_loop(&ff, &get_status, invchim, bamfile, outfile, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &get_status, invchim, chrconvert, bamfile, outfile, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
@@ -560,11 +568,11 @@ status no_status_check (const segment& left, const segment& right) {
 	return NEITHER;
 }
 
-SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP chrconvert, SEXP bamfile, SEXP outfile, 
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
 	simple_finder ff(num_in_chrs, bwidth);
 	check_invalid_by_dist invchim(chimera_span);
-	return internal_loop(&ff, &no_status_check, &invchim, bamfile, outfile, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &no_status_check, &invchim, chrconvert, bamfile, outfile, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
