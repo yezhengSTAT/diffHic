@@ -5,14 +5,17 @@
 suppressWarnings(suppressPackageStartupMessages(require(diffHic)))
 source("simsam.R")
 
+dir<-"hic-test"
+dir.create(dir)
+
 # Checking CIGAR.
 
 checkCIGAR <- function(cigar, rstrand) {
-    output <- simsam("whee", "chrA", 1, !rstrand, c("chrA"=1000), cigar=cigar, len=GenomicAlignments::cigarWidthAlongQuerySpace(cigar))
+    output <- simsam(file.path(dir, "whee"), "chrA", 1, !rstrand, c("chrA"=1000), 
+           cigar=cigar, len=GenomicAlignments::cigarWidthAlongQuerySpace(cigar))
 
 	out <- .Call(diffHic:::cxx_test_parse_cigar, output)
 	if (is.character(out)) { stop(out) }
-    unlink(output)
 	
 	true.alen <- GenomicAlignments::cigarWidthAlongReferenceSpace(cigar)
 	if (out[1]!=true.alen) { stop("mismatch in alignment length") }
@@ -183,9 +186,10 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 		}
     }
 
-    # Throwing them into the SAM file generator. 
+    # Throwing them into the SAM file generator. Note that chromosome names are ordered inside. 
+    # If this differs from the order in 'max.cuts', it will test the ability of preparePairs to match them up correctly.
 	reversi<-c(1:npairs+npairs, 1:npairs)
-    out<-simsam(fname, names(chromosomes)[chrs], pos, str, chromosomes, names=names, len=rlen, 
+    out<-simsam(fname, names(chromosomes)[chrs], pos, str, chromosomes[order(names(chromosomes))], names=names, len=rlen, 
 			is.first=c(rep(TRUE, npairs), rep(FALSE, npairs)), is.paired=TRUE,
 			mate.chr=names(chromosomes)[chrs][reversi], mate.pos=pos[reversi], mate.str=str[reversi])
 
@@ -274,9 +278,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	if (pseudo) {
 		# Special behaviour; faster assignment into bins, no removal of dangling ends/self-cirlces
 		# (as these concepts are meaningless for arbitrary bins).
-		diagnostics <- prepPseudoPairs(out, param, tmpdir, output.dir="whee")
+		diagnostics <- prepPseudoPairs(out, param, tmpdir, output.dir=file.path(dir, "whee"))
 	} else {
-		diagnostics <- preparePairs(out, param, tmpdir, output.dir="whee")
+		diagnostics <- preparePairs(out, param, tmpdir, output.dir=file.path(dir, "whee"))
 		
 		stopifnot(sum(codes==1L)==diagnostics$same.id[["dangling"]])
 		stopifnot(sum(codes==3L)==diagnostics$same.id[["self.circle"]])
@@ -380,8 +384,6 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 # Initiating testing with something fairly benign.
 
 set.seed(0)
-dir<-"hic-test"
-dir.create(dir)
 fname<-file.path(dir, "out");
 max.cuts<-c(chrA=20L, chrB=10L, chrC=5L)
 
@@ -441,9 +443,22 @@ comp(fname, npairs=1000, size=c(50, 100), max.cuts=max.cuts);
 comp(fname, npairs=200, size=c(100, 500), max.cuts=max.cuts);
 comp(fname, npairs=1000, size=c(200, 300), max.cuts=max.cuts);
 
+max.cuts<-c(chrD=5L, chrC=6L, chrA=7L, chrE=4L, chrG=3L, chrB=1L, chrF=2L) # Shuffled.
+comp(fname, npairs=200, size=c(500, 1000), max.cuts=max.cuts)
+comp(fname, npairs=1000, size=c(50, 100), max.cuts=max.cuts);
+comp(fname, npairs=200, size=c(100, 500), max.cuts=max.cuts);
+comp(fname, npairs=1000, size=c(200, 300), max.cuts=max.cuts);
+
 # Checking results with pseudo-ness
 
 max.cuts<-c(chrA=20L, chrB=10L, chrC=5L)
+comp(fname, npairs=20, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=50, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=100, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
+comp(fname, npairs=100, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(200, 200))
+comp(fname, npairs=1000, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(500, 500))
+
+max.cuts<-c(chrB=20L, chrC=10L, chrA=5L) # Shuffled
 comp(fname, npairs=20, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
 comp(fname, npairs=50, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
 comp(fname, npairs=100, max.cuts=max.cuts, pseudo=TRUE, spacer=0, sizes=c(100, 100))
