@@ -3,12 +3,16 @@
 # We start with unit tests for individual components of the preparePairs C++ code.
 
 suppressWarnings(suppressPackageStartupMessages(require(diffHic)))
+source("simsam.R")
 
 # Checking CIGAR.
 
 checkCIGAR <- function(cigar, rstrand) {
-	out <- .Call(diffHic:::cxx_test_parse_cigar, cigar, rstrand)
+    output <- simsam("whee", "chrA", 1, !rstrand, c("chrA"=1000), cigar=cigar, len=GenomicAlignments::cigarWidthAlongQuerySpace(cigar))
+
+	out <- .Call(diffHic:::cxx_test_parse_cigar, output)
 	if (is.character(out)) { stop(out) }
+    unlink(output)
 	
 	true.alen <- GenomicAlignments::cigarWidthAlongReferenceSpace(cigar)
 	if (out[1]!=true.alen) { stop("mismatch in alignment length") }
@@ -103,10 +107,8 @@ try(assign2fragment(starts, ends, 0L, 1000L, TRUE, 10L)) # This should fail, as 
 # We also set up a full simulation for the entire function.
 
 suppressPackageStartupMessages(require("rhdf5"))
-source("simsam.R")
 
-comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, spacer=rlen, 
-		yield=max(1L, round(npairs/runif(1, 2, 10))), pseudo=FALSE) {
+comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, spacer=rlen, pseudo=FALSE) {
 	rlen<-as.integer(rlen)
 	spacer<-as.integer(spacer)
 	if (min(sizes) <= rlen) { stop("min fragment must be greater than read length") } 
@@ -272,9 +274,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 	if (pseudo) {
 		# Special behaviour; faster assignment into bins, no removal of dangling ends/self-cirlces
 		# (as these concepts are meaningless for arbitrary bins).
-		diagnostics <- prepPseudoPairs(out, param, tmpdir, yield=yield)
+		diagnostics <- prepPseudoPairs(out, param, tmpdir, output.dir="whee")
 	} else {
-		diagnostics <- preparePairs(out, param, tmpdir, yield=yield)
+		diagnostics <- preparePairs(out, param, tmpdir, output.dir="whee")
 		
 		stopifnot(sum(codes==1L)==diagnostics$same.id[["dangling"]])
 		stopifnot(sum(codes==3L)==diagnostics$same.id[["self.circle"]])
