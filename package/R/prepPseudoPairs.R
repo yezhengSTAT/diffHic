@@ -24,15 +24,12 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
 
 	# Checking consistency between SAM chromosome lengths and the ones in the cuts.
 	chromosomes<-scanBamHeader(bam)[[1]]$targets
-    ref.chrs <- names(chromosomes)
-    m <- match(ref.chrs, chrs)
+    bam.chrs <- names(chromosomes)
+    m <- match(bam.chrs, chrs)
     if (any(is.na(m))) { stop("missing chromosomes in cut site list") }
-
-    n.per.chr <- n.per.chr[m] # Rearranging so that BAM alignment TIDs refer to the correct chromosomes.
-    endpoints <- end(fragments)[last.in.chr[m]]   
-	for (x in seq_along(ref.chrs)) {
-		if (chromosomes[x]!=endpoints[x]) {
-			stop("length of ", ref.chrs[x], " is not consistent between BAM file and fragment ranges")
+	for (x in seq_along(bam.chrs)) {
+		if (chromosomes[x]!=end(fragments)[last.in.chr[m[x]]]) {
+			stop("length of ", bam.chrs[x], " is not consistent between BAM file and fragment ranges")
 		}
 	}
 
@@ -53,9 +50,9 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
     on.exit({ unlink(output.dir, recursive=TRUE) })
     prefix <- file.path(output.dir, "")
 
-    out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, bam, prefix, !ichim, chim.span, minq, dedup)
+    out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, m-1L, bam, prefix, !ichim, chim.span, minq, dedup)
     if (is.character(out)) { stop(out) }
-    .process_output(out, file, ref.chrs, before.first)
+    .process_output(out, file, chrs, before.first)
 }
 
 segmentGenome <- function(bs, size=500) 

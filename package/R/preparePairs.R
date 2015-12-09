@@ -31,15 +31,12 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
 
 	# Checking consistency between SAM chromosome lengths and the ones in the cuts.
 	chromosomes<-scanBamHeader(bam)[[1]]$targets
-    ref.chrs <- names(chromosomes)
-    m <- match(ref.chrs, chrs)
+    bam.chrs <- names(chromosomes)
+    m <- match(bam.chrs, chrs)
 	if (any(is.na(m))) { stop("missing chromosomes in cut site list") }
-
-    scuts <- scuts[m] # Rearranging so that BAM alignment TIDs refer to the correct chromosomes.
-    ecuts <- ecuts[m]
-    for (x in seq_along(ref.chrs)) {
-		if (chromosomes[x]!=tail(ecuts[[x]], 1)) {
-			stop("length of ", ref.chrs[x], " is not consistent between BAM file and fragment ranges")
+    for (x in seq_along(bam.chrs)) {
+		if (chromosomes[x]!=tail(ecuts[[m[x]]], 1)) {
+			stop("length of ", bam.chrs[x], " is not consistent between BAM file and fragment ranges")
 		}
 	}
 
@@ -61,34 +58,34 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
     prefix <- file.path(output.dir, "")
 
     # Calling the C++ code that does everything.
-	out <- .Call(cxx_report_hic_pairs, scuts, ecuts, bam, prefix, !ichim, chim.dist, minq, dedup)
+	out <- .Call(cxx_report_hic_pairs, scuts, ecuts, m-1L, bam, prefix, !ichim, chim.dist, minq, dedup)
     if (is.character(out)) { stop(out) }
-    .process_output(out, file, ref.chrs, boost.idx)
+    .process_output(out, file, chrs, boost.idx)
 }
 
 .splitByChr <- function(ranges)
 # Gets the start and end for each chromosome in the sorted GRanges. 
 {
-	ref.chrs <- as.character(runValue(seqnames(ranges)))
-	if (anyDuplicated(ref.chrs)) { stop("ranges for each chromosome should be consecutive") }
+	chrs <- as.character(runValue(seqnames(ranges)))
+	if (anyDuplicated(chrs)) { stop("ranges for each chromosome should be consecutive") }
 	ref.len <- runLength(seqnames(ranges))
 	end.index <- cumsum(ref.len)
 	start.index <- end.index - ref.len + 1L
-	names(end.index) <- names(start.index) <- ref.chrs
-	return(list(chr=ref.chrs, first=start.index, last=end.index))
+	names(end.index) <- names(start.index) <- chrs
+	return(list(chr=chrs, first=start.index, last=end.index))
 }
 
-.process_output <- function(c_out, file, ref.chrs, chr.start) {
+.process_output <- function(c_out, file, chrs, chr.start) {
     .initializeH5(file)
     for (a1.dex in seq_along(c_out[[1]])) { 
         curnames <- c_out[[1]][[a1.dex]]
         not.empty <- curnames!=""
         if (!any(not.empty)) { next }
-        anchor1 <- ref.chrs[a1.dex]
+        anchor1 <- chrs[a1.dex]
         .addGroup(file, anchor1)
 
 		for (a2.dex in which(not.empty)) { 
-            anchor2 <- ref.chrs[a2.dex]
+            anchor2 <- chrs[a2.dex]
             current.file <- curnames[a2.dex]
 			out <- read.table(current.file, header=FALSE, colClasses="integer")
 			colnames(out) <- c("anchor1.id", "anchor2.id", "anchor1.pos", "anchor2.pos", "anchor1.len", "anchor2.len")
