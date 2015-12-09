@@ -1,11 +1,11 @@
-preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim=TRUE, chim.dist=NA)
+preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim.dist=NA, output.dir=NULL)
 # This function prepares Hi-C data by stripping out all valid pairs from the BAM file and
 # returning a table describing the interacting fragments of that pair. Diagnnostic data is
 # also returned describing various bits and pieces of hiC quality.
 #
 # written by Aaron Lun
 # created 30 May 2013
-# last modified 22 November 2015
+# last modified 9 December 2015
 {
 	# Preparing cuts; start positions, end positions, index in 'fragments', segmented by chromosome.
 	# Anchor order is defined by the order of chromosomes in 'fragments'; earlier chromosomes
@@ -31,10 +31,15 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 
 	# Checking consistency between SAM chromosome lengths and the ones in the cuts.
 	chromosomes<-scanBamHeader(bam)[[1]]$targets
-	if (!all(names(chromosomes) %in% chrs)) { stop("missing chromosomes in cut site list") }
-	for (x in seq_along(chrs)) {
-		if (chromosomes[[chrs[x]]]!=tail(ecuts[[x]], 1)) {
-			stop("length of ", chrs[x], " is not consistent between BAM file and fragment ranges")
+    ref.chrs <- names(chromosomes)
+    m <- match(ref.chrs, chrs)
+	if (any(is.na(m))) { stop("missing chromosomes in cut site list") }
+
+    scuts <- scuts[m] # Rearranging so that BAM alignment TIDs refer to the correct chromosomes.
+    ecuts <- ecuts[m]
+    for (x in seq_along(ref.chrs)) {
+		if (chromosomes[x]!=tail(ecuts[[x]], 1)) {
+			stop("length of ", ref.chrs[x], " is not consistent between BAM file and fragment ranges")
 		}
 	}
 
@@ -44,14 +49,21 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 	chim.dist <- as.integer(chim.dist)
 	dedup <- as.logical(dedup)
 
-	# Setting up the calling function.
-	FUN <- function(read.pair.len, cur.chrs, out) { 
-		.Call(cxx_report_hic_pairs, scuts, ecuts, read.pair.len, cur.chrs, out$pos,
-			out$flag, out$cigar, out$mapq, !ichim, chim.dist, minq, dedup)
-	}
+    # Setting up the output directory.
+    if (is.null(output.dir)) { 
+        output.dir <- tempfile(tmpdir=".")
+    }
+    if (file.exists(output.dir)) { 
+        stop("output directory already exists")
+    }
+    dir.create(output.dir)
+    on.exit({ unlink(output.dir, recursive=TRUE) })
+    prefix <- file.path(output.dir, "")
 
-	# Returning collated results.
-	.innerPrepLoop(bam=bam, file=file, chrs=chrs, chr.start=boost.idx, FUN=FUN, yield=yield)
+    # Calling the C++ code that does everything.
+	out <- .Call(cxx_report_hic_pairs, scuts, ecuts, bam, prefix, !ichim, chim.dist, minq, dedup)
+    if (is.character(out)) { stop(out) }
+    .process_output(out, file, ref.chrs, boost.idx)
 }
 
 .splitByChr <- function(ranges)
@@ -66,85 +78,21 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 	return(list(chr=ref.chrs, first=start.index, last=end.index))
 }
 
-.innerPrepLoop <- function(bam, file, chrs, chr.start, FUN, yield)
-# This is the function that does the heavy lifting of looping through the file.
-# The collation function is specified in FUN. The idea is to allow the prepPseudoPairs
-# function to use the same loop without having to repeat the code.
-{
-	# Setting up storage vectors for diagnostics and other output.
-	diagnostics<- 0L
-	same.id <- 0L
-	singletons <- 0L
-	chimeras <- 0L
-	allfiles<-list()
-	file.count<-1L
+.process_output <- function(c_out, file, ref.chrs, chr.start) {
+    .initializeH5(file)
+    for (a1.dex in seq_along(c_out[[1]])) { 
+        curnames <- c_out[[1]][[a1.dex]]
+        not.empty <- curnames!=""
+        if (!any(not.empty)) { next }
+        anchor1 <- ref.chrs[a1.dex]
+        .addGroup(file, anchor1)
 
-	# Running through all pairs. Note that, despite the yieldSize, elements are extracted so
-	# that runs of 'QNAME's are not broken. See:
-	# 	https://stat.ethz.ch/pipermail/bioconductor/2013-March/051490.html for more details.
-	bf<-open(BamFile(bam, yieldSize=yield, obeyQname=TRUE, index=character(0)))
-	dir <- tempfile(tmpdir=".")
-	on.exit(unlink(dir, recursive=TRUE))
-	dir.create(dir)
-
-	while (1) {
-		out <- scanBam(bf, param=ScanBamParam(what=c("qname", "flag", "rname", "pos", "mapq", "cigar")))[[1]]
-		if (!length(out[[1]])) { break; }
-
-		# Converting chromosome ids, using the full set of chromosomes (not just those in this yield cycle).
-		stopifnot(is.factor(out$rname))
-		rematched <- match(levels(out$rname), chrs)
-		if (any(is.na(rematched))) { stop("unrecognised chromosomes in the BAM file") }
-		cur.chrs <- rematched[as.integer(out$rname)] - 1L
-
-		# Collating read names. We do it here so that any optimization of string comparisons applies
-		# here, rather than having to modify the C++ code from strcmp to pointer comparisons.
-		read.pair.len <- rle(out$qname)$length
-		collated <- FUN(read.pair.len, cur.chrs, out)
-		if (is.character(collated)) { stop(collated) }
-
-		# Adding the statistics.
-		diagnostics <- diagnostics + collated[[3]]
-		same.id <- same.id + collated[[4]]
- 		singletons <- singletons + collated[[5]]
-		chimeras <- chimeras + collated[[6]]
-		out <- NULL
-
-		# Dumping to a temporary place.
-		nonempty <- collated[[1]]
-		if (!nrow(nonempty)) { next }
-		pairdata <- collated[[2]]
-
-		for (i in seq_len(nrow(nonempty))) {
-			anchor1 <- chrs[nonempty[i,1]]
-			anchor2 <- chrs[nonempty[i,2]]
-			if (is.null(allfiles[[anchor1]])) { allfiles[[anchor1]] <- list() }
-	
-			current.file <- allfiles[[anchor1]][[anchor2]]
-			if (is.null(current.file)) {
-				current.file <- file.path(dir, paste0(file.count, ".gz"))
-				allfiles[[anchor1]][[anchor2]] <- current.file
-				file.count <- file.count+1L
-			}
-	
-			fout <- gzfile(current.file, open="ab")
-			write.table(file=fout, pairdata[[i]], sep="\t", quote=FALSE, col.names=FALSE, row.names=FALSE)
-			close(fout)
-		}
-		collated <- NULL
-	}
-	close(bf)
-
-	# Parsing the directory, pulling out data.frames. We adjust the anchor indices to get the
-	# full values, and we sort them by anchor1/anchor2. We then save them into a HDF5 file.
-	.initializeH5(file)
-	for (anchor1 in names(allfiles)) {
-		tfiles <- allfiles[[anchor1]]
-		.addGroup(file, anchor1)
-		for (anchor2 in names(tfiles)) {
-			current.file <- tfiles[[anchor2]]
+		for (a2.dex in which(not.empty)) { 
+            anchor2 <- ref.chrs[a2.dex]
+            current.file <- curnames[a2.dex]
 			out <- read.table(current.file, header=FALSE, colClasses="integer")
 			colnames(out) <- c("anchor1.id", "anchor2.id", "anchor1.pos", "anchor2.pos", "anchor1.len", "anchor2.len")
+
 			out$anchor1.id <- out$anchor1.id+chr.start[[anchor1]]
 			out$anchor2.id <- out$anchor2.id+chr.start[[anchor2]]
 			out <- out[order(out$anchor1.id, out$anchor2.id),,drop=FALSE]
@@ -153,13 +101,11 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim
 		}
 	}
 
-	# Returning a list of diagnostic components.
-	names(diagnostics)<-c("total", "marked", "filtered", "mapped")
- 	names(same.id) <- c("dangling", "self.circle")
-	names(chimeras) <- c("total", "mapped", "multi", "invalid")
-	return(list(pairs=diagnostics,
-				same.id=same.id,
-				singles=singletons,
-				chimeras=chimeras))
+    c_out <- c_out[-1]
+    names(c_out) <- c("pairs", "same.id", "singles", "chimeras")
+	names(c_out$pairs) <-c("total", "marked", "filtered", "mapped")
+ 	names(c_out$same.id) <- c("dangling", "self.circle")
+	names(c_out$chimeras) <- c("total", "mapped", "multi", "invalid")
+    return(c_out)
 }
 

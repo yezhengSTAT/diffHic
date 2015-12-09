@@ -12,45 +12,37 @@ class base_finder {
 public:
 	base_finder() {}
     size_t nchrs() const { return pos.size(); }
-    const char* get_rname(const int i) const { return pos[i].rname; }
 	virtual int find_fragment(const int&, const int&, const bool&, const int&) const = 0;
     virtual ~base_finder() {};
 protected:
 	struct chr_stats {
-		chr_stats(const char * r, const int* s, const int* e, const int& l) : rname(r), start_ptr(s), end_ptr(e), num(l) {}
+		chr_stats(const int* s, const int* e, const int& l) : start_ptr(s), end_ptr(e), num(l) {}
 		const int* start_ptr;
 		const int* end_ptr;
-        const char * rname;
 		int num;
 	};
 	std::deque<chr_stats> pos;
-    int check_names(SEXP);
 };
-
-int base_finder::check_names(SEXP chrnames) {
-    if (!isString(chrnames)) { throw std::runtime_error("chromosome names should be a character string"); }
-    return LENGTH(chrnames);
-}
 
 class fragment_finder : public base_finder {
 public:
-	fragment_finder(SEXP, SEXP, SEXP); // Takes a list of vectors of positions and reference names for those vectors.
+	fragment_finder(SEXP, SEXP); // Takes a list of vectors of positions and reference names for those vectors.
 	int find_fragment(const int&, const int&, const bool&, const int&) const;
 };
 
-fragment_finder::fragment_finder(SEXP chrnames, SEXP starts, SEXP ends) {
-    const int nnames=check_names(chrnames);
+fragment_finder::fragment_finder(SEXP starts, SEXP ends) {
 	if (!isNewList(starts) || !isNewList(ends)) { throw std::runtime_error("start/end positions should each be a list of integer vectors"); }
-	if (nnames!=LENGTH(starts) || nnames!=LENGTH(ends)) { throw std::runtime_error("number of names does not correspond to number of start/end position vectors"); }
+    const int nchrs=LENGTH(starts);
+	if (nchrs!=LENGTH(ends)) { throw std::runtime_error("number of start/end position vectors should be equal"); }
 	
-	for (int i=0; i<nnames; ++i) {
+	for (int i=0; i<nchrs; ++i) {
 		SEXP current1=VECTOR_ELT(starts, i);
 		if (!isInteger(current1)) { throw std::runtime_error("start vector should be integer"); }
 		SEXP current2=VECTOR_ELT(ends, i);
 		if (!isInteger(current2)) { throw std::runtime_error("end vector should be integer"); }
 		const int ncuts=LENGTH(current1);
 		if (LENGTH(current2)!=ncuts) { throw std::runtime_error("start/end vectors should have the same length"); }
-		pos.push_back(chr_stats(CHAR(STRING_ELT(chrnames, i)), INTEGER(current1), INTEGER(current2), ncuts));	
+		pos.push_back(chr_stats(INTEGER(current1), INTEGER(current2), ncuts));	
 	}
 	return;
 }
@@ -276,7 +268,7 @@ public:
     ~OutputFile() {
         if (out!=NULL) { std::fclose(out); }
     }
-private:
+    
     FILE * out;
     std::string path;
 };
@@ -301,24 +293,9 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	const bool rm_dup=asLogical(do_dedup);
 	const int minq=asInteger(minqual);
 	const bool rm_min=!ISNA(minq);
-
-    // Initializing chromosome name conversion table.
 	const size_t nc=ffptr->nchrs();
-    const int32_t ntargets=input.header -> n_targets;
-    int* to_standard=(int*)R_alloc(int(ntargets), sizeof(int));
-    {
-        std::map<std::string, int> standard_names;
-        for (size_t i=0; i<nc; ++i) { 
-            standard_names[std::string(ffptr->get_rname(i))]=i;
-        }
-        std::map<std::string, int>::const_iterator itsn;
-        for (int i=0; i<ntargets; ++i) { 
-            itsn=standard_names.find(std::string((input.header->target_name)[i]));
-            to_standard[i]=(itsn!=standard_names.end() ? itsn->second : -1);
-        }
-    }
 
-	// Constructing output containers
+   	// Constructing output containers
     const char* oprefix=CHAR(STRING_ELT(prefix, 0));
 	std::deque<std::deque<OutputFile> > collected(nc);
 	for (size_t i=0; i<nc; ++i) { 
@@ -347,8 +324,9 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
         while (input.read_alignment()) {
             isempty=false;  
             if (std::strcmp(bam_get_qname(input.read), qname.c_str())!=0) { 
-                input.put_back(); 
+                // First one will pop out, but that's okay.
                 qname=bam_get_qname(input.read);
+                input.put_back(); 
                 break;
             }
 
@@ -357,19 +335,14 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
             const int32_t& curtid=(input.read -> core).tid;
             if (curtid==-1) { // unmapped
                 current.chrid=0;
-            } else if (curtid >= ntargets) {
+            } else if (curtid >= nc) {
                 throw std::runtime_error("read tid out of range of defined chromosomes in BAM file");
             } else {
-                current.chrid=to_standard[curtid];
-                if (current.chrid<0) { 
-                    std::stringstream err;
-                    err << "unrecognised chromosome '" << (input.header->target_name)[curtid] << "' in the BAM file"; 
-                    throw std::runtime_error(err.str());
-                }
+                current.chrid=curtid;
             }
 			current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
 			parse_cigar(input.read, current.alen, current.offset, current.reverse);
-
+            
 			// Checking how we should proceed; whether we should bother adding it or not.
 			curdup=bool((input.read -> core).flag & BAM_FDUP);
 			curunmap=(bool((input.read -> core).flag & BAM_FUNMAP) || (rm_min && (input.read -> core).qual < minq));
@@ -380,7 +353,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 				ischimera=true;
 			}
 
-			// Checking what the read is (first or second).
+            // Checking what the read is (first or second).
 			isfirst=bool((input.read -> core).flag & BAM_FREAD1);
 			if (isfirst) { hasfirst=true; }
 			else { hassecond=true; }
@@ -479,28 +452,38 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
                 anchor_seg.reverse, target_seg.reverse);
 	}
 
-	SEXP total_output=PROTECT(allocVector(VECSXP, 4));
+	SEXP total_output=PROTECT(allocVector(VECSXP, 5));
 	try {
+        // Saving all file names.
+        SET_VECTOR_ELT(total_output, 0, allocVector(VECSXP, nc));
+        for (int i=0; i<nc; ++i) {
+            SET_VECTOR_ELT(total_output, i, allocVector(STRSXP, i+1));
+            SEXP current_paths=VECTOR_ELT(total_output, i);
+            for (int j=0; j<=i; ++j) {
+                SET_STRING_ELT(current_paths, j, mkChar(collected[i][j].path.c_str()));
+            } 
+        }
+
 		// Dumping mapping diagnostics.
-		SET_VECTOR_ELT(total_output, 0, allocVector(INTSXP, 4));
-		int* dptr=INTEGER(VECTOR_ELT(total_output, 2));
+		SET_VECTOR_ELT(total_output, 1, allocVector(INTSXP, 4));
+		int* dptr=INTEGER(VECTOR_ELT(total_output, 1));
 		dptr[0]=total;
 		dptr[1]=dupped;
 		dptr[2]=filtered;
 		dptr[3]=mapped;
 	
 		// Dumping the number of dangling ends, self-circles.	
-		SET_VECTOR_ELT(total_output, 1, allocVector(INTSXP, 2));
-		int * siptr=INTEGER(VECTOR_ELT(total_output, 3));
+		SET_VECTOR_ELT(total_output, 2, allocVector(INTSXP, 2));
+		int * siptr=INTEGER(VECTOR_ELT(total_output, 2));
 		siptr[0]=dangling;
 		siptr[1]=selfie;
 
 		// Dumping the number designated 'single', as there's no pairs.
-		SET_VECTOR_ELT(total_output, 2, ScalarInteger(single));
+		SET_VECTOR_ELT(total_output, 3, ScalarInteger(single));
 
 		// Dumping chimeric diagnostics.
-		SET_VECTOR_ELT(total_output, 3, allocVector(INTSXP, 4));
-		int* cptr=INTEGER(VECTOR_ELT(total_output, 5));
+		SET_VECTOR_ELT(total_output, 4, allocVector(INTSXP, 4));
+		int* cptr=INTEGER(VECTOR_ELT(total_output, 4));
 		cptr[0]=total_chim;
 		cptr[1]=mapped_chim;
 		cptr[2]=multi_chim;
@@ -513,9 +496,9 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	return total_output;
 }
 
-SEXP report_hic_pairs (SEXP chrnames, SEXP start_list, SEXP end_list, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP bamfile, SEXP outfile, 
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
-	fragment_finder ff(chrnames, start_list, end_list);
+	fragment_finder ff(start_list, end_list);
 	
 	check_invalid_by_fragid invfrag; // Bit clunky to define both, but easiest to avoid nested try/catch.
 	check_invalid_by_dist invdist(chimera_span);
@@ -534,22 +517,20 @@ SEXP report_hic_pairs (SEXP chrnames, SEXP start_list, SEXP end_list, SEXP bamfi
 
 class simple_finder : public base_finder {
 public:
-	simple_finder(SEXP, SEXP, SEXP);
+	simple_finder(SEXP, SEXP);
 	int find_fragment(const int&, const int&, const bool&, const int&) const;
 private:
 	int bin_width;
 };
 
-simple_finder::simple_finder(SEXP chrnames, SEXP n_per_chr, SEXP bwidth) {
+simple_finder::simple_finder(SEXP n_per_chr, SEXP bwidth) {
 	if (!isInteger(bwidth)|| LENGTH(bwidth)!=1) { throw std::runtime_error("bin width must be an integer scalar"); }
 	bin_width=asInteger(bwidth);
 
-    const int nnames=check_names(chrnames);
     if (!isInteger(n_per_chr)) { throw std::runtime_error("number of fragments per chromosome must be an integer vector"); }
-    if (LENGTH(n_per_chr)!=nnames) { throw std::runtime_error("length of bins per chromosome and chromosome names are not equal"); }
-
+    const int nchrs=LENGTH(n_per_chr);
     const int* nptr=INTEGER(n_per_chr);
-	for (int i=0; i<nnames; ++i) { pos.push_back(chr_stats(CHAR(STRING_ELT(chrnames, i)), NULL, NULL, nptr[i])); }
+	for (int i=0; i<nchrs; ++i) { pos.push_back(chr_stats(NULL, NULL, nptr[i])); }
 	return;	
 }
 
@@ -574,9 +555,9 @@ status no_status_check (const segment& left, const segment& right) {
 	return NEITHER;
 }
 
-SEXP report_hic_binned_pairs (SEXP chrnames, SEXP num_in_chrs, SEXP bwidth, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP bamfile, SEXP outfile, 
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
-	simple_finder ff(chrnames, num_in_chrs, bwidth);
+	simple_finder ff(num_in_chrs, bwidth);
 	check_invalid_by_dist invchim(chimera_span);
 	return internal_loop(&ff, &no_status_check, &invchim, bamfile, outfile, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
@@ -608,8 +589,8 @@ SEXP test_parse_cigar (SEXP incoming, SEXP reverse) try {
 	return mkString(e.what());
 }
 
-SEXP test_fragment_assign(SEXP chrnames, SEXP starts, SEXP ends, SEXP chrs, SEXP pos, SEXP rev, SEXP len) try {
-	fragment_finder ff(chrnames, starts, ends);
+SEXP test_fragment_assign(SEXP starts, SEXP ends, SEXP chrs, SEXP pos, SEXP rev, SEXP len) try {
+	fragment_finder ff(starts, ends);
 	if (!isInteger(chrs) || !isInteger(pos) || !isLogical(rev) || !isInteger(len)) { throw std::runtime_error("data types are wrong"); }
 	const int n=LENGTH(chrs);
 	if (n!=LENGTH(pos) || n!=LENGTH(rev) || n!=LENGTH(len)) { throw std::runtime_error("length of data vectors are not consistent"); }
