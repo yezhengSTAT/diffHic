@@ -53,7 +53,7 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
     on.exit({ unlink(output.dir, recursive=TRUE) })
     prefix <- file.path(output.dir, "")
 
-    out <- .Call(cxx_report_hic_pairs, scuts, ecuts, bam, prefix, !ichim, chim.dist, minq, dedup)
+    out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, bam, prefix, !ichim, chim.span, minq, dedup)
     if (is.character(out)) { stop(out) }
     .process_output(out, file, ref.chrs, before.first)
 }
