@@ -6,7 +6,7 @@
 \description{Identifies the interacting pair of restriction fragments corresponding to each read pair in a Hi-C library.}
 
 \usage{
-preparePairs(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim=TRUE, chim.dist=NA)
+preparePairs(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim.dist=NA, output.dir=NULL)
 }
 
 \arguments{
@@ -15,9 +15,9 @@ preparePairs(bam, param, file, dedup=TRUE, minq=NA, yield=1e7, ichim=TRUE, chim.
 	\item{file}{a character string specifying the path to an output index file}
 	\item{dedup}{a logical scalar indicating whether marked duplicate reads should be removed}
 	\item{minq}{an integer scalar specifying the minimum mapping quality for each read}
-	\item{yield}{a numeric scalar specifying the number of reads to extract at every iteration}
 	\item{ichim}{a logical scalar indicating whether invalid chimeras should be counted}
 	\item{chim.dist}{an integer scalar specifying the maximum distance between segments for a valid chimeric read pair}
+	\item{output.dir}{a character string specifying a directory for temporary files}
 }
 
 \section{Converting to restriction fragment indices}{
@@ -65,10 +65,10 @@ This ensures that the duplicate computations are performed on the most relevant 
 }
 
 \section{Miscellaneous information}{
-The value of \code{yield} simply controls the amount of memory used by regulating the number of read pairs that are loaded in at any given time. 
-Large values will require more memory but will reduce the computation time. 
-Input files must be sorted by read name for proper execution of the function.
-Read pair information need not be synchronised so long as the pairing, first read and second read flags are appropriately set.
+If \code{output.dir} is not specified, a directory name is constructed using the \code{\link{tempfile}} command.
+If it is specified, users should make sure that no file already exists with that name.
+Otherwise, an error will be raised.
+This directory is used to store intermediate files that will be eventually processed into the HDF5 output file.
 
 Users should note that the use of a \code{pairParam} object for input is strictly for convenience.
 Any non-empty values of \code{param$discard} and \code{param$restrict} will be ignored here.
@@ -96,7 +96,9 @@ An integer vector is also returned from the function, containing various diagnos
 }
 }
 
-\author{Aaron Lun}
+\author{Aaron Lun,
+with use of Rhtslib based on comments from Alessandro Mammana.
+}
 
 \seealso{
 \code{\link{cutGenome}}, 
