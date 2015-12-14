@@ -49,6 +49,8 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
     # Setting up the output directory.
     if (is.null(output.dir)) { 
         output.dir <- tempfile(tmpdir=".")
+    } else {
+        output.dir <- path.expand(output.dir)
     }
     if (file.exists(output.dir)) { 
         stop("output directory already exists")
@@ -58,7 +60,7 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
     prefix <- file.path(output.dir, "")
 
     # Calling the C++ code that does everything.
-	out <- .Call(cxx_report_hic_pairs, scuts, ecuts, m-1L, bam, prefix, !ichim, chim.dist, minq, dedup)
+	out <- .Call(cxx_report_hic_pairs, scuts, ecuts, m-1L, path.expand(bam), prefix, !ichim, chim.dist, minq, dedup)
     if (is.character(out)) { stop(out) }
     .process_output(out, file, chrs, boost.idx)
 }

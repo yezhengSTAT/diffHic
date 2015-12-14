@@ -42,6 +42,8 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
     # Setting up the output directory.
     if (is.null(output.dir)) { 
         output.dir <- tempfile(tmpdir=".")
+    } else {
+        output.dir <- path.expand(output.dir)
     }
     if (file.exists(output.dir)) { 
         stop("output directory already exists")
@@ -50,7 +52,7 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
     on.exit({ unlink(output.dir, recursive=TRUE) })
     prefix <- file.path(output.dir, "")
 
-    out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, m-1L, bam, prefix, !ichim, chim.span, minq, dedup)
+    out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, m-1L, path.expand(bam), prefix, !ichim, chim.span, minq, dedup)
     if (is.character(out)) { stop(out) }
     .process_output(out, file, chrs, before.first)
 }
