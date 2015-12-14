@@ -1,5 +1,4 @@
 #include "diffhic.h"
-#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include "sam.h"
