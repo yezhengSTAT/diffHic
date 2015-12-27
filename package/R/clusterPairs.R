@@ -46,9 +46,14 @@ clusterPairs <- function(..., tol, upper=1e6)
 	tstarts <- tstarts[ro]
 	aends <- aends[ro]
 	tends <- tends[ro]
+
 	n <- length(ro)
-	is.new <- which(c(TRUE, achrs[-1]!=achrs[-n] | tchrs[-1]!=tchrs[-n]))
-	upnext <- c(is.new[-1]-1L, n)
+    if (n) { 
+        is.new <- which(c(TRUE, achrs[-1]!=achrs[-n] | tchrs[-1]!=tchrs[-n]))
+        upnext <- c(is.new[-1]-1L, n)
+    } else {
+        is.new <- upnext <- integer(0)
+    }
 
 	# Now, running through.
 	all.ids <- integer(n)
