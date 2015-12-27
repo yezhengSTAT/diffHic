@@ -43,12 +43,13 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	colnames(mat) <- rownames(mat) <- all.a
 
 	# Filling NA's (i.e., zero's). Using mid-distance, interpolating to get the trend.
-	lost <- which(is.na(mat), arr.ind=TRUE)
+	lost.ind <- which(is.na(mat))
+    lost <- arrayInd(lost.ind, dim(mat))
 	seq.id <- as.integer(seqnames(regions(data)))
 	mid.pts <- mid(ranges(regions(data)))
 	lost.dist <- abs(mid.pts[lost[,1]] - mid.pts[lost[,2]])
 	lost.dist <- log10(lost.dist + metadata(data)$width)
-	mat[is.na(mat)] <- .makeEmpty(data) - dist2trend(lost.dist)
+	mat[lost.ind] <- .makeEmpty(data) - dist2trend(lost.dist)
 
 	# Correcting for coverage biases, by subtracting half the average coverage from both rows
 	# and columns. This is equivalent to dividing by square root of coverage, which works pretty
