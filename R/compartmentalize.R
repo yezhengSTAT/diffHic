@@ -54,7 +54,7 @@ compartmentalize <- function(data, centers=2, dist.correct=TRUE,
 	# Correcting for coverage biases, by subtracting half the average coverage from both rows
 	# and columns. This is equivalent to dividing by square root of coverage, which works pretty
 	# well in place of a more rigorous iterative approach (check out Rao's supplementaries).
-	rwm <- log2(Matrix::rowMeans(2^mat))
+	rwm <- log2(rowMeans(2^mat))
 	if (cov.correct) {
 		mat <- mat - rwm/2
 		mat <- t(t(mat) - rwm/2)
