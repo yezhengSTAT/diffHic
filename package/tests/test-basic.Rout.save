@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2015-12-04 r69737) -- "Unsuffered Consequences"
+R Under development (unstable) (2015-12-22 r69809) -- "Unsuffered Consequences"
 Copyright (C) 2015 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -84,7 +84,7 @@ dim: 10 1
 metadata(2): param width
 assays(1): counts
 rownames: NULL
-metadata column names(0):
+rowData names(0):
 colnames: NULL
 colData names(1): totals
 type: StrictGInteractions
@@ -97,7 +97,7 @@ dim: 6 1
 metadata(1): param
 assays(1): counts
 rownames: NULL
-rowRanges metadata column names(1): nfrags
+rowData names(1): nfrags
 colnames: NULL
 colData names(1): totals
 > totalCounts(fout, param)
@@ -110,7 +110,7 @@ dim: 2 1
 metadata(1): param
 assays(1): counts
 rownames: NULL
-metadata column names(0):
+rowData names(0):
 colnames: NULL
 colData names(1): totals
 type: StrictGInteractions
@@ -281,4 +281,4 @@ Sample1     a       17            2
 > 
 > proc.time()
    user  system elapsed 
-  6.679   0.132   6.920 
+  7.556   0.198   7.750 

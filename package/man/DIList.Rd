@@ -24,6 +24,7 @@
 \alias{exptData<-,DIList,SimpleList-method}
 
 \alias{[,DIList,ANY,ANY-method}
+\alias{[,DIList,ANY,ANY,ANY-method}
 \alias{show,DIList-method}
 \alias{c,DIList-method}
 \alias{as.matrix,DIList-method}
