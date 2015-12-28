@@ -82,7 +82,13 @@ int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, co
 
 void parse_cigar (const bam1_t* read, int& alen, int& offset) {
     const uint32_t* cigar=bam_get_cigar(read);
-	alen=bam_cigar2rlen((read->core).n_cigar, cigar);
+    const int n_cigar=(read->core).n_cigar;
+    if (n_cigar==0) { 
+        std::stringstream err;
+        err << "zero-length CIGAR for read '" << bam_get_qname(read) << "'";
+        throw std::runtime_error(err.str());
+    }
+	alen=bam_cigar2rlen(n_cigar, cigar);
     offset=0;
 
     if ((read->core).n_cigar) { 
@@ -343,7 +349,9 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
             if (curtid==-1) { // unmapped
                 current.chrid=0;
             } else if (curtid >= nc) {
-                throw std::runtime_error("read tid out of range of defined chromosomes in BAM file");
+                std::stringstream err;
+                err << "tid for read '" << bam_get_qname(input.read) << "' out of range of BAM header";
+                throw std::runtime_error(err.str());
             } else {
                 current.chrid=converter[curtid];
             }
