@@ -23,8 +23,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 	x.min <- max(1L, xstart)
 	x.max <- min(seqlengths(fragments)[[xchr]], xend)
 	if (x.min >= x.max) { stop("invalid ranges supplied") }
-    x.range <- x.max - x.min 
-    if (is.null(max.height)) { max.height <- x.range }
+    if (is.null(max.height)) { max.height <- x.max - x.min }
 
 	# Setting up the boxes.		
 	width<-as.integer(width) 
@@ -35,9 +34,9 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
 						
 	# Identifying the boxes in our ranges of interest (with some leeway, to ensure that 
 	# there's stuff in the corners of the rotated plot). Specifically, you need to include 
-	# 'center +/- x.range' on either side to fill up the top left/right corners; this is
-	# equivalent to the region interval +- 'x.range/2'. We ask for a bit more, to be safe.
-	use.bin <- overlapsAny(new.pts$region, region, maxgap=x.range*0.7)
+	# 'center +/- max.height' on either side to fill up the top left/right corners; this is
+	# equivalent to the region interval +- 'max.height/2'. We ask for a bit more, to be safe.
+	use.bin <- overlapsAny(new.pts$region, region, maxgap=max.height*0.7)
 	keep.frag <- logical(length(fragments))
 	keep.frag[cur.chrs] <- use.bin[new.pts$id]	
 	
@@ -125,14 +124,13 @@ rotDI <- function(data, fc, region, col.up="red", col.down="blue",
 	x.min <- max(1L, xstart)
 	x.max <- min(seqlengths(regions(data))[[xchr]], xend)
 	if (x.min >= x.max) { stop("invalid ranges supplied") }
-	x.range <- x.max - x.min 
-    if (is.null(max.height)) { max.height <- x.range }
+    if (is.null(max.height)) { max.height <- x.max - x.min }
 
     # Checking that our points are consistent.
     nr <- nrow(data)
     if (nr!=length(fc)) { stop("length of fold-change vector should equal number of bin pairs") }
-						
-	# Identifying the fragments in our ranges of interest.
+
+    # Identifying the fragments in our ranges of interest.
 	ref.keep <- overlapsAny(regions(data), region, maxgap=max.height*0.7)
 	keep <- ref.keep[anchors(data, type="first", id=TRUE)] & ref.keep[anchors(data, type="second", id=TRUE)]
 
