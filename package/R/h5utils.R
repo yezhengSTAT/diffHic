@@ -89,12 +89,13 @@ loadChromos <- function(file)
 # file. This is designed to allow users to pull out one chromosome or another.
 #
 # written by Aaron Lun
-# created 3 November 2014.
-# last modified 22 November 2015
+# created 3 November 2014
+# last modified 6 January 2016
 {
 	current <- h5ls(file)
 	keep <- current$otype=="H5I_DATASET"
-	return(data.frame(anchor1=basename(current$group[keep]), anchor2=current$name[keep]))
+	return(data.frame(anchor1=basename(current$group[keep]), 
+            anchor2=current$name[keep], stringsAsFactors=FALSE))
 }
 
 loadData <- function(file, anchor1, anchor2) 
