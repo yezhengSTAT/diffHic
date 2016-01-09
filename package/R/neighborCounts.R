@@ -84,7 +84,7 @@ neighborCounts <- function(files, param, width=50000, filter=1L, flank=NULL, exc
 	out.counts <- do.call(rbind, out.counts)
 
 	return(list(interaction=InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
-		interactions=GInteractions(anchor1=out.a, anchor2=out.t, regions=new.pts$region, mode="strict"), 
+		interactions=GInteractions(anchor1=out.a, anchor2=out.t, regions=new.pts$region, mode="reverse"), 
         metadata=List(param=param, width=width)), enrichment=out.f))
 }
 
