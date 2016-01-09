@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2015-12-04 r69737) -- "Unsuffered Consequences"
+R Under development (unstable) (2015-12-22 r69809) -- "Unsuffered Consequences"
 Copyright (C) 2015 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -48,7 +48,7 @@ Type 'q()' to quit R.
 +    	chosen.t <- chosen.t[o]
 +    	is.diff <- c(TRUE, diff(chosen.a)!=0 | diff(chosen.t)!=0)
 + 	return(InteractionSet(list(counts=matrix(0L, nrow=alln, ncol=1)), 
-+         GInteractions(anchor1=chosen.a, anchor2=chosen.t, region=output, mode="strict"),
++         GInteractions(anchor1=chosen.a, anchor2=chosen.t, region=output, mode="reverse"),
 +         colData=DataFrame(totals=100)))
 + }
 > 
@@ -77,7 +77,7 @@ Type 'q()' to quit R.
 + 		new.ts <- reordered[new.ts]
 + 		new.regs <- new.regs[o]
 + 		data <- InteractionSet(list(counts=matrix(0L, length(new.as), 1, dimnames=list(NULL, 1))), 
-+             GInteractions(anchor1=new.as, anchor2=new.ts, regions=new.regs, mode="strict"))
++             GInteractions(anchor1=new.as, anchor2=new.ts, regions=new.regs, mode="reverse"))
 + 	}
 + 
 + 	# Simulating cluster formation first, by expanding each region and checking for overlaps.
@@ -520,4 +520,4 @@ Type 'q()' to quit R.
 > 
 > proc.time()
    user  system elapsed 
- 16.916   0.148  17.061 
+ 18.714   0.184  18.901 

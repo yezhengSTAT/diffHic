@@ -29,7 +29,7 @@ simgen <- function(alln, chromos, width, min.space, max.space) {
    	chosen.t <- chosen.t[o]
    	is.diff <- c(TRUE, diff(chosen.a)!=0 | diff(chosen.t)!=0)
 	return(InteractionSet(list(counts=matrix(0L, nrow=alln, ncol=1)), 
-        GInteractions(anchor1=chosen.a, anchor2=chosen.t, region=output, mode="strict"),
+        GInteractions(anchor1=chosen.a, anchor2=chosen.t, region=output, mode="reverse"),
         colData=DataFrame(totals=100)))
 }
 
@@ -58,7 +58,7 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 		new.ts <- reordered[new.ts]
 		new.regs <- new.regs[o]
 		data <- InteractionSet(list(counts=matrix(0L, length(new.as), 1, dimnames=list(NULL, 1))), 
-            GInteractions(anchor1=new.as, anchor2=new.ts, regions=new.regs, mode="strict"))
+            GInteractions(anchor1=new.as, anchor2=new.ts, regions=new.regs, mode="reverse"))
 	}
 
 	# Simulating cluster formation first, by expanding each region and checking for overlaps.

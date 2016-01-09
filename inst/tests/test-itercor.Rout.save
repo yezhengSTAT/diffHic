@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2015-11-22 r69685) -- "Unsuffered Consequences"
+R Under development (unstable) (2015-12-22 r69809) -- "Unsuffered Consequences"
 Copyright (C) 2015 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -32,7 +32,7 @@ Type 'q()' to quit R.
 + 	data <- InteractionSet(counts, 
 +         GInteractions(anchor1=all.pairs$anchor1.id[chosen], anchor2=all.pairs$anchor2.id[chosen], 
 +     		regions=GRanges(sort(sample(c("chrA", "chrB", "chrC"), nfrags, replace=TRUE)),
-+     			IRanges(1:nfrags, 1:nfrags)), mode="strict"),
++     			IRanges(1:nfrags, 1:nfrags)), mode="reverse"),
 +         colData=DataFrame(totals=rep(1, nlibs)))
 + 	
 + 	# Constructing the values.	
@@ -215,4 +215,4 @@ Type 'q()' to quit R.
 > 
 > proc.time()
    user  system elapsed 
-  6.800   0.132   6.925 
+  8.046   0.209   8.276 
