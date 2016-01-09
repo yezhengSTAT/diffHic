@@ -53,7 +53,7 @@ regions <- diffHic:::.getBinID(cuts, 20)$region
 all.combos <- combn(length(regions), 2)
 y <- InteractionSet(matrix(0, ncol(all.combos), 1), 
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], 
-        regions=regions, mode="strict"), 
+        regions=regions, mode="reverse"), 
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=20))
 
 # Generating partially overlapping regions.
@@ -66,7 +66,7 @@ regions <- sort(regions)
 all.combos <- combn(length(regions), 2)
 y2 <- InteractionSet(matrix(0, ncol(all.combos), 1), 
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], 
-        regions=regions, mode="strict"),
+        regions=regions, mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param))
 
 #### Getting areas. ####

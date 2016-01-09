@@ -18,7 +18,7 @@ squareCounts(files, param, width=50000, filter=1L)
 
 \value{
 An InteractionSet object is returned containing the number of read pairs for each bin pair across all libraries.
-Bin pairs are stored as a StrictGInteractions object.
+Bin pairs are stored as a ReverseStrictGInteractions object.
 }
 
 \details{
@@ -98,7 +98,7 @@ unlink(fout, recursive=TRUE)
 \code{\link{preparePairs}},
 \code{\link{cutGenome}},
 \code{\link[InteractionSet]{InteractionSet-class}},
-\code{\link[InteractionSet]{StrictGInteractions-class}}
+\code{\link[InteractionSet]{ReverseStrictGInteractions-class}}
 }
 
 \references{

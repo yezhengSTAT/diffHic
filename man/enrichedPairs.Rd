@@ -98,7 +98,7 @@ all.anchor1 <- sample(length(regions), 50, replace=TRUE)
 all.anchor2 <- as.integer(runif(50, 1, all.anchor1+1))
 data <- InteractionSet(matrix(rnbinom(200, mu=10, size=10), 50, 4), 
     GInteractions(anchor1=all.anchor1, anchor2=all.anchor2, 
-        regions=regions, mode="strict"), 
+        regions=regions, mode="reverse"), 
     colData=DataFrame(lib.size=1:4*1000), metadata=List(width=1))
 data$totals <- colSums(assay(data))
 

@@ -96,8 +96,8 @@ boxPairs <- function(..., reference, minbox=FALSE)
     if (!is(x, "InteractionSet")) { 
         stop("input object must be an InteractionSet")
     } 
-    if (!is(interactions(x), "StrictGInteractions")) { 
-        stop("'interactions' slot of InteractionSet must be a 'StrictGInteractions'")
+    if (!is(interactions(x), "ReverseStrictGInteractions")) { 
+        stop("'interactions' slot of InteractionSet must be a 'ReverseStrictGInteractions'")
     }
     invisible(return(NULL))
 }

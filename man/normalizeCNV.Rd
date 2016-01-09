@@ -84,7 +84,7 @@ anchor2 <- sample(npts, npairs, replace=TRUE)
 data <- InteractionSet(
     matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
     GInteractions(anchor1=anchor1, anchor2=anchor2, 
-        regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="strict"),
+        regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="reverse"),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6))) 
 
 margins <- SummarizedExperiment(matrix(rpois(npts*nlibs, 100), nrow=npts),
@@ -98,7 +98,7 @@ head(normalizeCNV(data, margins, span=0.5))
 # Occasionally locfit will complain; increase maxk to compensate.
 data <- InteractionSet(matrix(rpois(npairs*nlibs, 20), nrow=npairs),
     GInteractions(anchor1=anchor1, anchor2=anchor2,
-        regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="strict"),
+        regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="reverse"),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6)))
 tryCatch(head(normalizeCNV(data, margins, maxk=100)), error=function(e) e)
 head(normalizeCNV(data, margins, maxk=1000))

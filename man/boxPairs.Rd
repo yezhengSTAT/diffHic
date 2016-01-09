@@ -62,7 +62,7 @@ param <- pairParam(cuts)
 
 all.combos <- combn(length(cuts), 2) # Bin size of 1.
 y <- InteractionSet(matrix(0, ncol(all.combos), 1), 
-    GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts, mode="strict"),
+    GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts, mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=1))
 
 a5 <- a/5
@@ -71,7 +71,7 @@ all.combos2 <- combn(length(cuts)/5, 2) # Bin size of 5.
 y2 <- InteractionSet(matrix(0, ncol(all.combos2), 1), 
     GInteractions(anchor1=all.combos2[2,], anchor2=all.combos2[1,], 
     	regions=GRanges(rep(c("chrA", "chrB"), c(a5, b5)), 
-    		IRanges(c((1:a5-1)*5+1, (1:b5-1)*5+1), c(1:a5*5, 1:b5*5))), mode="strict"),
+    		IRanges(c((1:a5-1)*5+1, (1:b5-1)*5+1), c(1:a5*5, 1:b5*5))), mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=5))
 
 # Clustering.
