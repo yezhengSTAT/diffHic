@@ -13,7 +13,7 @@ comp<- function(npairs, nfrags, nlibs, lambda=5, winsorize=0.02, discard=0.02, l
 	data <- InteractionSet(counts, 
         GInteractions(anchor1=all.pairs$anchor1.id[chosen], anchor2=all.pairs$anchor2.id[chosen], 
     		regions=GRanges(sort(sample(c("chrA", "chrB", "chrC"), nfrags, replace=TRUE)),
-    			IRanges(1:nfrags, 1:nfrags)), mode="strict"),
+    			IRanges(1:nfrags, 1:nfrags)), mode="reverse"),
         colData=DataFrame(totals=rep(1, nlibs)))
 	
 	# Constructing the values.	
