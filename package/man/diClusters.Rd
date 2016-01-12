@@ -61,7 +61,7 @@ cuts <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 1:b
 param <- pairParam(cuts)
 
 all.combos <- combn(length(cuts), 2) # Bin size of 1.
-y <- InteractionSet(matrix(0, ncol(all.combos), 1), 
+y1 <- InteractionSet(matrix(0, ncol(all.combos), 1), 
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts, mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=1))
 
@@ -74,16 +74,14 @@ y2 <- InteractionSet(matrix(0, ncol(all.combos2), 1),
 		    IRanges(c((1:a5-1)*5+1, (1:b5-1)*5+1), c(1:a5*5, 1:b5*5))), mode="reverse"),
      colData=DataFrame(lib.size=1000), metadata=List(param=param, width=5))
 
-result1 <- data.frame(logFC=rnorm(nrow(y)), PValue=runif(nrow(y)), logCPM=0)
+set.seed(1000)
+result1 <- data.frame(logFC=rnorm(nrow(y1)), PValue=runif(nrow(y1)), logCPM=0)
+result1$PValue[sample(nrow(result1), 50)] <- 0
 result2 <- data.frame(logFC=rnorm(nrow(y2)), PValue=runif(nrow(y2)), logCPM=0)
+result2$PValue[sample(nrow(result2), 2)] <- 0
 
-# Consolidating.
+# Consolidating with post-hoc control.
 out <- diClusters(list(y1), list(result1), target=0.05, cluster.args=list(tol=1))
-out <- diClusters(list(y1), list(result1), target=0.05, cluster.args=list(tol=1),
-                    pval.col="PValue", fc.col="logFC")
-out <- diClusters(list(y1), list(result1), target=0.05, cluster.args=list(tol=1, max.width=5))
-out <- diClusters(list(y1), list(result1, result2), target=0.05, 
-                    cluster.args=list(tol=1), equiweight=FALSE)
 }
 
 \keyword{testing}
