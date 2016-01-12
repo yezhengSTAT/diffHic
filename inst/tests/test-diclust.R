@@ -2,20 +2,21 @@
 # rather than doing rigorous tests, because that would be equivalent to just repeating
 # the R code and that seems a bit like a waste of time. 
 
-checkResults <- function(data.list, result.list, ..., true.pos) {
-    out <- diClusters(data.list, result.list, ...)
+suppressPackageStartupMessages(require(diffHic))
+checkResults <- function(data.list, result.list, pval.col="PValue", tol, ..., true.pos) {
+    out <- diClusters(data.list, result.list, cluster.args=list(tol=tol), pval.col=pval.col, ...)
 
     # Checking that the clustering is fine.
-    all.ids <- unlist(out$id)
-    ref <- do.call(c, data.list)
-    bbox <- boundingBox(ref, all.ids)
+    all.ids <- unlist(out$indices)
+    was.sig <- !is.na(all.ids)
+    ref <- do.call(c, data.list)[was.sig,]
+    bbox <- boundingBox(ref, all.ids[was.sig])
     stopifnot(all(bbox$first==out$anchor1))
     stopifnot(all(bbox$second==out$anchor2))
 
     # Checking that the right interactions were chosen.
-    all.ps <- sapply(result.list, FUN=function(x) { x$PValue })
-    was.sig <- !is.na(all.ids)
-    stopifnot(max(all.ps[was.sig]) > min(all.ps[!was.sig]))
+    all.ps <- unlist(sapply(result.list, FUN=function(x) { x[,pval.col] }))
+    if (any(was.sig) && any(!was.sig)) { stopifnot(max(all.ps[was.sig]) < min(all.ps[!was.sig])) }
 
     # Reporting the observed and estimated FDRs.
     np <- sum(!overlapsAny(GRangesList(out$anchor1, out$anchor2), true.pos))
@@ -24,9 +25,9 @@ checkResults <- function(data.list, result.list, ..., true.pos) {
 
 set.seed(100)
 regions <- GRanges("chrA", IRanges(1:500, 1:500))
-first.anchor <- sample(1000, 50, replace=TRUE)
-second.anchor <- sample(1000, 50, replace=TRUE)
-interactions <- InteractionSet(matrix(0, nrow=1000, ncol=1), ReverseStrictGInteractions(first.anchor, second.anchor, regions))
+first.anchor <- sample(500, 1000, replace=TRUE)
+second.anchor <- sample(500, 1000, replace=TRUE)
+interactions <- InteractionSet(matrix(0, nrow=1000, ncol=1), GInteractions(first.anchor, second.anchor, regions, mode="reverse"))
 test.p <- runif(1000)
 test.p[rep(1:2, 100) + rep(0:99, each=2) * 10] <- 0 
 
@@ -48,7 +49,9 @@ checkResults(list(interactions), list(data.frame(PValue=test.p)), tol=5, target=
 checkResults(list(interactions), list(data.frame(PValue=test.p)), tol=5, target=0.1, true.pos=true.pos)
 checkResults(list(interactions), list(data.frame(whee=test.p)), tol=2, pval.col="whee", target=0.05, true.pos=true.pos)
 
-signs <- c(-1, 1)[rbinom(100, 1, 0.5)+1]
+signs <- ifelse(rbinom(1000, 1, 0.5)!=0, 1, -1)
+checkResults(list(interactions, interactions[1:10]), list(data.frame(PValue=test.p, logFC=signs), data.frame(PValue=test.p[1:10], logFC=signs[1:10])), 
+             tol=0, target=0.05, true.pos=true.pos)
 checkResults(list(interactions, interactions[1:10]), list(data.frame(PValue=test.p, logFC=signs), data.frame(PValue=test.p[1:10], logFC=signs[1:10])), 
              tol=0, fc.col="logFC", target=0.05, true.pos=true.pos)
 
