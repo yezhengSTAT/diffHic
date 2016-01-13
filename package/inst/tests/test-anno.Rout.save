@@ -97,7 +97,7 @@ Type 'q()' to quit R.
 + 
 +     # Everyone split up into chunks.
 +     grouping <- sample(3, length(data), replace=TRUE)
-+     re.data <- as.list(split(data, grouping))
++     re.data <- split(data, grouping)
 +     re.index <- split(indices, grouping)
 +     obs.i <- annotatePairs(re.data, indices = re.index, regions = simregs, ...)
 +     .check_strings(ref$anchor1, obs.i$anchor1)
@@ -317,4 +317,4 @@ Type 'q()' to quit R.
 > 
 > proc.time()
    user  system elapsed 
- 12.151   0.169  12.344 
+ 12.130   0.169  12.299 
