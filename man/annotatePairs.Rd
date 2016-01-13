@@ -54,16 +54,21 @@ b <- 20
 cuts <- GRanges(rep(c("chrA", "chrB"), c(a, b)), IRanges(c(1:a, 1:b), c(1:a, 1:b)))
 param <- pairParam(cuts)
 
-all.combos <- combn(length(cuts), 2) # Bin size of 1.
+all.combos <- combn(length(cuts), 2) 
 y <- InteractionSet(matrix(0, ncol(all.combos), 1), 
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts, mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=1))
 
 regions <- GRanges(rep(c("chrA", "chrB"), c(3,2)), IRanges(c(1,5,8,3,3), c(1,5,8,3,4)))
 names(regions) <- LETTERS[seq_along(regions)] 
-
-# Consolidating with post-hoc control.
 out <- annotatePairs(y, regions=regions)
+
+# Again, with indices:
+indices <- sample(20, length(y), replace=TRUE)
+out <- annotatePairs(y, regions=regions, indices=indices)
+
+# Again, with multiple InteractionSet objects:
+out <- annotatePairs(list(y, y[1:10,]), regions=regions, indices=list(indices, indices[1:10]))
 }
 
 \keyword{annotation}
