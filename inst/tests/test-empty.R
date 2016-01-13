@@ -44,3 +44,7 @@ asDGEList(ghost)
 normOffsets(ghost)
 normOffsets(ghost, type="loess")
 
+diClusters(ghost, data.frame(PValue=integer(0), logFC=numeric(0)), target=0.05, cluster.args=list(tol=1))
+
+annotatePairs(ghost, indices=integer(0), regions=GRanges())
+
