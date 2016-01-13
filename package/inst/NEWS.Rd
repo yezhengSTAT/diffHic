@@ -2,7 +2,7 @@
 \title{diffHic News}
 \encoding{UTF-8}
 
-\section{Version 1.3.3}{\itemize{
+\section{Version 1.3.5}{\itemize{
 \item 
 Deprecated DIList objects and methods in favour of InteractionSet objects.
 
@@ -11,6 +11,12 @@ marginCounts() now returns a RangedSummarizedExperiment for all bins.
 
 \item
 Added the max.height argument to the rotPlaid() and rotDI() functions.
+
+\item
+Added the diClusters() function for post-hoc cluster-level FDR control.
+
+\item
+Added the annotatePairs() function for convenient annotation of (clusters of) interactions.
 
 \item
 Updated user's guide, documentation and tests.
