@@ -78,7 +78,7 @@ annocomp <- function(data, simregs, indices, ...) {
 
     # Everyone split up into chunks.
     grouping <- sample(3, length(data), replace=TRUE)
-    re.data <- as.list(split(data, grouping))
+    re.data <- split(data, grouping)
     re.index <- split(indices, grouping)
     obs.i <- annotatePairs(re.data, indices = re.index, regions = simregs, ...)
     .check_strings(ref$anchor1, obs.i$anchor1)

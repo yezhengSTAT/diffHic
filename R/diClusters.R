@@ -19,12 +19,16 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
     }
 
     # Checking inputs.
-    if (!is.list(data.list)) { data.list <- list(data.list) }
-    if (!is.list(result.list) || is.data.frame(result.list)) { result.list <- list(result.list) }
+    if (.notList(data.list)) {
+        data.list <- list(data.list) 
+    }
+    if (.notList(result.list) || is.data.frame(result.list)) { 
+        result.list <- list(result.list) 
+    }
 	nset <- length(data.list)
 	if (nset!=length(result.list)) { stop("data list must have same length as result list") }
 	for (x in seq_len(nset)) {
-		if (!identical(length(data.list[[x]]), nrow(result.list[[x]]))) {
+		if (length(data.list[[x]])!=nrow(result.list[[x]])) {
  		   	stop("corresponding entries of data and result lists must have same number of entries") 
         }
 	}
@@ -99,3 +103,5 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
     clusters$FDR <- out$FDR    
     return(clusters)
 }
+
+.notList <- function(x) { (!is.list(x) && !is(x, "List")) }

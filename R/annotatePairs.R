@@ -5,7 +5,7 @@ annotatePairs <- function(data.list, regions, rnames=names(regions), indices, ..
 # written by Aaron Lun
 # created 13 January 2016    
 {
-    if (!is.list(data.list)) { 
+    if (.notList(data.list)) { 
         if (missing(indices)) { 
             indices <- seq_along(data.list)
         }
@@ -13,10 +13,10 @@ annotatePairs <- function(data.list, regions, rnames=names(regions), indices, ..
     } else if (missing(indices)) { 
         stop("'indices' cannot be missing if 'data.list' is a list")
     }
-    if (!is.list(indices)) { 
+    if (.notList(indices)) {
         indices <- list(indices) 
     }
-    if (!identical(lengths(indices), lengths(data.list))) { 
+    if (length(indices)!=length(data.list) || any(lengths(indices)!=lengths(data.list))) { 
         stop("length of elements in 'indices' and 'data.list' must be equal")
     }
     if (length(regions)!=length(rnames)) {
