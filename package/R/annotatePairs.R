@@ -19,6 +19,7 @@ annotatePairs <- function(data.list, regions, rnames=names(regions), indices, ..
     if (length(indices)!=length(data.list) || any(lengths(indices)!=lengths(data.list))) { 
         stop("length of elements in 'indices' and 'data.list' must be equal")
     }
+    rnames <- as.character(rnames)
     if (length(regions)!=length(rnames)) {
         stop("length of 'regions' and 'rnames' must be the same")
     }
@@ -54,7 +55,7 @@ annotatePairs <- function(data.list, regions, rnames=names(regions), indices, ..
     # Concatenating the strings.
     a1.anno <- sapply(split(unlist(collected.anno1), unlist(collected.index1)), .uniqConcat)
     a2.anno <- sapply(split(unlist(collected.anno2), unlist(collected.index2)), .uniqConcat)
-    anchor1.anno <- anchor2.anno <- character(max(sapply(indices, max)))
+    anchor1.anno <- anchor2.anno <- character(max(0L, sapply(indices, function(x) { if (length(x)) { return(max(x)) } else { return(0L) } })))
     anchor1.anno[as.integer(names(a1.anno))] <- a1.anno
     anchor2.anno[as.integer(names(a2.anno))] <- a2.anno
     return(list(anchor1=anchor1.anno, anchor2=anchor2.anno))
