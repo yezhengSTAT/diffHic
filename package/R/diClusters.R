@@ -5,6 +5,7 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
 #
 # written by Aaron Lun
 # created 12 January 2016
+# last modified 13 January 2016
 {
     # Setting initial parameters.    
     if (missing(target)) {
@@ -18,6 +19,8 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
     }
 
     # Checking inputs.
+    if (!is.list(data.list)) { data.list <- list(data.list) }
+    if (!is.list(result.list) || is.data.frame(result.list)) { result.list <- list(result.list) }
 	nset <- length(data.list)
 	if (nset!=length(result.list)) { stop("data list must have same length as result list") }
 	for (x in seq_len(nset)) {

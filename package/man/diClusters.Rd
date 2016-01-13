@@ -10,8 +10,8 @@ diClusters(data.list, result.list, target, equiweight=TRUE, cluster.args=list(),
 }
 
 \arguments{
-\item{data.list}{a list of InteractionSet objects containing bin pairs.}
-\item{result.list}{a list of data frames containing the DI test results for each bin pair.}
+\item{data.list}{an InteractionSet or a list of InteractionSet objects containing bin pairs.}
+\item{result.list}{a data frame or a list of data frames containing the DI test results for each bin pair.}
 \item{target}{a numeric scalar specifying the desired cluster-level FDR.}
 \item{equiweight}{a logical scalar indicating whether equal weighting from each input object should be enforced}
 \item{cluster.args}{a list of parameters to supply to \code{\link{clusterPairs}}.}
@@ -65,23 +65,12 @@ y1 <- InteractionSet(matrix(0, ncol(all.combos), 1),
     GInteractions(anchor1=all.combos[2,], anchor2=all.combos[1,], regions=cuts, mode="reverse"),
     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=1))
 
-a5 <- a/5
-b5 <- b/5
-all.combos2 <- combn(length(cuts)/5, 2) # Bin size of 5.
-y2 <- InteractionSet(matrix(0, ncol(all.combos2), 1), 
-    GInteractions(anchor1=all.combos2[2,], anchor2=all.combos2[1,], 
-	    regions=GRanges(rep(c("chrA", "chrB"), c(a5, b5)), 
-		    IRanges(c((1:a5-1)*5+1, (1:b5-1)*5+1), c(1:a5*5, 1:b5*5))), mode="reverse"),
-     colData=DataFrame(lib.size=1000), metadata=List(param=param, width=5))
-
 set.seed(1000)
 result1 <- data.frame(logFC=rnorm(nrow(y1)), PValue=runif(nrow(y1)), logCPM=0)
 result1$PValue[sample(nrow(result1), 50)] <- 0
-result2 <- data.frame(logFC=rnorm(nrow(y2)), PValue=runif(nrow(y2)), logCPM=0)
-result2$PValue[sample(nrow(result2), 2)] <- 0
 
 # Consolidating with post-hoc control.
-out <- diClusters(list(y1), list(result1), target=0.05, cluster.args=list(tol=1))
+out <- diClusters(y1, result1, target=0.05, cluster.args=list(tol=1))
 }
 
 \keyword{testing}

@@ -9,13 +9,21 @@ checkResults <- function(data.list, result.list, pval.col="PValue", tol, ..., tr
     # Checking that the clustering is fine.
     all.ids <- unlist(out$indices)
     was.sig <- !is.na(all.ids)
-    ref <- do.call(c, data.list)[was.sig,]
+    if (is.list(data.list)) { 
+        ref <- do.call(c, data.list)[was.sig,]
+    } else {
+        ref <- data.list[was.sig,]
+    }
     bbox <- boundingBox(ref, all.ids[was.sig])
     stopifnot(all(bbox$first==out$anchor1))
     stopifnot(all(bbox$second==out$anchor2))
 
     # Checking that the right interactions were chosen.
-    all.ps <- unlist(sapply(result.list, FUN=function(x) { x[,pval.col] }))
+    if (is.data.frame(result.list)) { 
+        all.ps <- result.list[,pval.col] 
+    } else { 
+        all.ps <- unlist(sapply(result.list, FUN=function(x) { x[,pval.col] })) 
+    }
     if (any(was.sig) && any(!was.sig)) { stopifnot(max(all.ps[was.sig]) < min(all.ps[!was.sig])) }
 
     # Reporting the observed and estimated FDRs.
@@ -32,6 +40,7 @@ test.p <- runif(1000)
 test.p[rep(1:2, 100) + rep(0:99, each=2) * 10] <- 0 
 
 true.pos <- interactions[test.p==0]
+checkResults(interactions, data.frame(PValue=test.p), tol=0, target=0.05, true.pos=true.pos)
 checkResults(list(interactions), list(data.frame(PValue=test.p)), tol=0, target=0.05, true.pos=true.pos)
 checkResults(list(interactions), list(data.frame(PValue=test.p)), tol=10, target=0.05, true.pos=true.pos)
 
