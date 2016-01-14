@@ -1825,7 +1825,7 @@ results.d <- data.frame(anchor1=as.data.frame(clustered.sig$anchor1)[,1:3],
     anchor2=as.data.frame(clustered.sig$anchor2)[,1:3], tabcom[,1:4], 
     logFC=tabbest$logFC, FDR=clustered.sig$FDR)
 o.d <- order(results.d$PValue)
-write.table(results.d[o.d,], file="diclusters.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+write.table(results.d[o.d,], file="clustered.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 \subsection{Independent clustering of adjacent bin pairs}
@@ -1902,7 +1902,7 @@ Both \code{diClusters} and \code{clusterPairs} accept multiple \code{Interaction
 
 <<>>=
 merged.data <- list(larger=data, smaller=smaller.data)
-merged.results <- list(results$table, result.small$table)
+merged.results <- list(result$table, result.small$table)
 clustered.mult <- diClusters(merged.data, merged.results, target=0.05, cluster.args=list(tol=1))
 head(clustered.mult$indices$larger)
 head(clustered.mult$indices$smaller)
