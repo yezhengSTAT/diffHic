@@ -45,7 +45,7 @@
 % Set to change date for document, not compile date.
 \date{First edition 12 December 2012\\
 \vspace{6pt}
-Last revised 25 November 2015}
+Last revised 14 January 2016}
 
 % Removing the bibliography title so it shows up in the contents.
 \makeatletter
@@ -1736,33 +1736,108 @@ For genome-wide analyses, this correction can be performed by controlling the fa
 This provides a suitable comprimise between specificity and sensitivity.
 In contrast, traditional methods of correction (e.g., Bonferroni) are often too conservative.
 
-\subsection{Direct application of the BH method}
-The BH method can be applied directly to the $p$-values for the individual bin pairs. 
-In this case, the FDR refers to the proportion of detected bin pairs that are false positives. 
-Significantly specific interactions are defined as those that are detected at an FDR of 5\%.
+\subsection{Clustering to reduce redundancy in the results}
+Adjacent bin pairs can be aggregated into larger clusters to reduce redundancy in the interpretation of the results.
+This is especially useful at smaller bin sizes where multiple bin pairs may overlap a single underlying interaction.
+This is demonstrated below with the 100 kbp bin pairs.
+The \code{clusterPairs} function puts two bin pairs in the same cluster if they are no more than \code{tol} bp apart in any dimension.
 
 <<>>=
-adj.p <- p.adjust(result$table$PValue, method="BH")
-sum(adj.p <= 0.05)
+clustered.small <- clusterPairs(smaller.data, tol=1, upper=1e6)
 @
 
-These can be saved to file as necessary.
-Resorting by $p$-value just makes it easier to parse the final table, as the most interesting differential interactions are placed at the top.
+In practice, this approach requires aggressive filtering to avoid chaining effects.
+Otherwise, clustering will be confounded by the density of the interaction space, particularly at short distances and/or in TADs.
+This results in the formation of very large clusters that are difficult to interpret.
+Some protection is provided by setting \code{upper} to limit the maximum dimensions of each cluster.
+This will cause excessively large clusters to be broken up, albeit in a somewhat arbitrary manner.
+
+There is also no guarantee that the cluster will form a regular shape in the interaction space.
+In \code{clusterPairs}, an approximate solution is used whereby the minimum bounding box for each cluster is reported.
+This refers to the smallest rectangle in the interaction space that contains all bin pairs in the cluster.
+The coordinates of this rectangle can be easily recorded, whereas it is more difficult to store the detailed shape of the cluster.
+Identification of the top-ranking bin pair within each cluster may also be desirable (see Section~\ref{sec:nesting}).
 
 <<>>=
-a1x.d <- anchors(data, type="first")
-a2x.d <- anchors(data, type="second")
-results.d <- data.frame(anchor1.chr=seqnames(a1x.d), anchor1.start=start(a1x.d), 
-    anchor1.end=end(a1x.d), anchor2.chr=seqnames(a2x.d), anchor2.start=start(a2x.d), 
-    anchor2.end=end(a2x.d), result$table, FDR=adj.p)
-o.d <- order(result$table$PValue)
-write.table(results.d[o.d,], file="results.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+clustered.small$anchor1
+clustered.small$anchor2
+@
+
+The FDR across clusters is not the same as the FDR across the individual bin pairs.
+The former is more useful as results are usually interpreted in terms of clusters, where each cluster corresponds to a single underlying interaction.
+However, the FDR across bin pairs is easier to compute by applying the BH method to all bin pairs.
+Treating the FDR across bin pairs as that across clusters is usually inappropriate and will result in loss of FDR control \citep{lun2014denovo}.
+This section will deal with some strategies for controlling the cluster-level FDR.
+
+\subsection{Clustering based on significant bin pairs}
+Ideally, clustering is done in a manner that is independent of the test statistics, e.g., using the abundance.
+This means that established methods can be used to control the FDR across clusters (see Section~\ref{sec:independentcluster}).
+However, the interaction space is often dominated by high-abundance structural features like domains and compartments. 
+Attempting to cluster bin pairs here may result in excessive chaining, yielding very large clusters for which the coordinates are mostly uninformative with respect to DIs.
+
+To avoid this, it may be necessary to cluster on those bin pairs that are significantly different.
+These bin pairs are more sparsely distributed throughout the interaction space, such that the coordinates of the resulting clusters can be easily interpreted.
+This is done using the \code{diClusters} function, as shown below for the results with the 1 Mbp bin pairs.
+Each cluster represents a DI containing only significant bin pairs.
+This is more useful than reporting the coordinates for an entire domain if only a portion of the domain is changing.
+
+<<>>=
+clustered.sig <- diClusters(data, result$table, target=0.05, cluster.args=list(tol=1))
+length(clustered.sig$anchor1)
+@
+
+The \code{clusterPairs} function is used internally to perform clustering on significant bin pairs. 
+No limits are placed on the maximum dimensions, as the sparsity of bin pairs should avoid chaining effects.
+Additional sophistication can be obtained by setting \code{fc.col="logFC"}.
+This will cluster bin pairs separately if they are changing in opposite directions.
+
+The above \code{diClusters} call will attempt to control the cluster-level FDR below 5\%.
+Specifically, the cluster-level FDR is estimated from the bin pair-level FDR threshold used to define significant windows (see the \code{clusterFDR} function in the \csaw{} package).
+The bin pair-level threshold is then adjusted until the estimate of the cluster-level FDR lies close to \code{target}.
+The estimated cluster-level FDR can be obtained in the \code{FDR} field of the output.
+Admittedly, this procedure is not statistically rigorous and will yield biased estimates for small numbers of clusters.
+However, this may be a necessary price to pay for interpretable results in high-density areas of the interaction space.
+
+<<>>=
+clustered.sig$FDR
+@
+
+Additional details on the bin pairs in each cluster can be obtained using the \code{combineTests} and \code{getBestTest} functions in \csaw{}.
+This will report the number of bin pairs in each cluster, the number changing in each direction, the bin pair with the lowest $p$-value, etc.
+Users are advised to ignore the $p$-value and FDR fields as these assume independent clustering.
+
+<<>>=
+library(csaw)
+tabcom <- combineTests(clustered.sig$indices[[1]], result$table)
+head(tabcom)
+tabbest <- getBestTest(clustered.sig$indices[[1]], result$table)
+head(tabbest)
+@
+
+Results can be easily saved to file as shown below.
+Here, coordinates of the bounding box for each cluster are saved along with some useful cluster statistics.
+The combined $p$-value from \code{combineTests} is stored but is only used for sorting and should not be interpreted as a significance measure.
+Resorting makes it easier to parse the final table, as the most interesting differential interactions are placed at the top.
+
+<<>>=
+results.d <- data.frame(anchor1=as.data.frame(clustered.sig$anchor1)[,1:3], 
+    anchor2=as.data.frame(clustered.sig$anchor2)[,1:3], tabcom[,1:4], 
+    logFC=tabbest$logFC, FDR=clustered.sig$FDR)
+o.d <- order(results.d$PValue)
+write.table(results.d[o.d,], file="diclusters.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 \subsection{Independent clustering of adjacent bin pairs}
-Adjacent bin pairs can be aggregated into larger clusters to reduce redundancy in the interpretation of the results.
-This is especially useful at smaller bin sizes, where multiple bin pairs may overlap a single underlying interaction.
-To demonstrate, a quick-and-dirty differential analysis of the previously loaded counts for the 100 kbp bin pairs is performed here.
+\label{sec:independentcluster}
+The basic idea of independent clustering is that it is done independently of the test statistics.
+This means that other metrics must be used to identify relevant bin pairs.
+If there are pre-defined areas of interest in the interaction space
+    (e.g., based on existing interactions from earlier experiments or when studying interactions between annotated features),
+    identification of these bin pairs can be performed with methods like \code{findOverlaps} from the \code{InteractionSet} package.
+All bin pairs overlapping a pre-defined area can be defined as a single cluster.
+Otherwise, filtering on the average abundance will implicitly restrict the clustering to high-abundance bin pairs.
+This is less problematic when the interaction space is sparse, such that the clusters will be small enough to be interpretable.
+To demonstrate, a quick-and-dirty differential analysis is performed for the 100 kbp bin pairs.
 
 <<>>=
 y.small <- asDGEList(smaller.data)
@@ -1772,94 +1847,49 @@ fit.small <- glmQLFit(y.small, design, robust=TRUE)
 result.small <- glmQLFTest(fit.small)
 @
 
-The \code{clusterPairs} function puts two bin pairs in the same cluster if they are no more than \code{tol} bp apart.
-Cluster-level $p$-values are obtained by combining $p$-values across all bin pairs in the cluster using Simes' method \citep{simes1986}.
-Clusters can then be reported instead of individual bin pairs.
-Misinterpretation of the FDR is also mitigated as each interaction is represented by one cluster with one combined $p$-value (see Section~\ref{sec:mergebins}).
+A combined $p$-value is computed for each cluster from the $p$-values of its bin pairs, using the method described by \cite{simes1986}.
+This represents the evidence against the global null hypothesis, i.e., that none of the constituent bin pairs are significant.
+Cluster-level FDR control is maintained by applying the BH method on the combined $p$-values for all clusters.
+Significant clusters can then be defined at a certain FDR threshold, e.g., 5\%.
+This is the statistically rigorous alternative to the \textit{post-hoc} approach in \code{diClusters}.
 
 <<>>=
-clustered <- clusterPairs(smaller.data, tol=1, upper=1e6)
-tabcluster <- csaw::combineTests(clustered$indices[[1]], result.small$table)
+tabcluster <- combineTests(clustered.small$indices[[1]], result.small$table)
 head(tabcluster)
+sum(tabcluster$FDR <= 0.05)
 @
 
-In practice, this approach requires aggressive filtering to avoid chaining effects.
-Otherwise, clustering will be confounded by the density of the interaction space, particularly at short distances and/or in TADs.
-Some protection is provided by setting \code{upper} to limit the maximum dimensions of each cluster.
-Even so, the boundaries of each cluster become ambiguous and difficult to interpret, e.g., if a whole TAD is absorbed into a cluster.
-
-There is no guarantee that the cluster will form a regular shape in the interaction space.
-In \code{clusterPairs}, an approximate solution is used whereby the minimum bounding box for each cluster is reported.
-This refers to the smallest rectangle in the interaction space that contains all bin pairs in the cluster.
-The coordinates of this rectangle can be easily recorded, whereas it is more difficult to store the detailed shape of the cluster.
-Identification of the top-ranking bin pair within each cluster may also be desirable (see Section~\ref{sec:nesting}).
+Results can then be saved to file as previously shown.
+Here, the $p$-value and FDR from \code{combineTests} have valid statistical interpretations and are retained in the result table.
+Metrics from \code{getBestTest} can also be added if so desired.
 
 <<>>=
-a1x.c <- clustered$anchor1
-a2x.c <- clustered$anchor2
-results.c <- data.frame(anchor1.chr=seqnames(a1x.c), anchor1.start=start(a1x.c), 
-    anchor1.end=end(a1x.c), anchor2.chr=seqnames(a2x.c), anchor2.start=start(a2x.c), 
-    anchor2.end=end(a2x.c), tabcluster)
-o.c <- order(tabcluster$PValue)
-write.table(results.c[o.c,], file="clustered.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+results.i <- data.frame(anchor1=as.data.frame(clustered.small$anchor1)[,1:3], 
+    anchor2=as.data.frame(clustered.small$anchor2)[,1:3], tabcluster)
+o.i <- order(results.i$PValue)
+write.table(results.i[o.i,], file="independent.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
-\subsection{Clustering based on significant bin pairs}
-The interaction space is often dominated by high-abundance structural features like domains and compartments. 
-Attempting to cluster on abundance may result in excessive chaining, yielding very large clusters for which the coordinates are mostly uninformative with respect to DIs.
-To avoid this, it may be necessary to cluster on those bin pairs that are significantly different.
-These bin pairs are more sparsely distributed throughout the interaction space, such that the coordinates of the resulting clusters can be easily interpreted.
-
-To demonstrate, the test results for the 1 Mbp bin pairs will be used here.
-Significant bin pairs are defined at a FDR threshold of 5\%, and clustered together with \code{clusterPairs}.
-Each cluster represents the coordinates of a DI.
-This is more useful than reporting the coordinates for an entire domain if only a portion of the domain is changing.
-No limits are placed on the maximum dimensions, as the sparsity of bin pairs should avoid chaining effects.
+\subsection{Direct application of the BH method}
+For large bin sizes, users may wish to interpret each bin pair on its own without any clustering.
+In such cases, the BH method can be applied directly to the $p$-values for the individual bin pairs. 
+The FDR here refers to the proportion of detected bin pairs that are false positives, rather than the proportion of detected clusters. 
+Significantly specific interactions are defined as those that are detected at an FDR of 5\%.
 
 <<>>=
-threshold <- 0.05
-is.sig <- adj.p <= threshold
-sig.data <- data[is.sig,]
-clustered.sig <- clusterPairs(sig.data, tol=1, upper=NULL)
-head(clustered.sig$anchor1)
-head(clustered.sig$anchor2)
+adj.p <- p.adjust(result$table$PValue, method="BH")
+sum(adj.p <= 0.05)
 @
 
-However, this summarization procedure is not statistically rigorous.
-Controlling the FDR across bin pairs does not guarantee control of the FDR over clusters \citep{lun2014denovo}.
-Instead, an informal estimate of the cluster-level FDR can be obtained with the \code{clusterFDR} function.
-The idea is to adjust \code{threshold} such that the cluster-level FDR lies below some desired value.
-All clusters formed at the chosen \code{threshold} can then be reported.
+These can be saved to file as described.
+Here, the bin pair-level results are used as no clustering is performed. 
 
 <<>>=
-csaw::clusterFDR(clustered.sig$indices[[1]], threshold)
+results.r <- data.frame(anchor1=as.data.frame(anchors(data, type="first"))[,1:3],
+    anchor2=as.data.frame(anchors(data, type="second"))[,1:3], result$table, FDR=adj.p)
+o.r <- order(results.r$PValue)
+write.table(results.r[o.r,], file="binpairs.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
-
-In general, direct application of the BH method or independent clustering should be preferred to this \textit{ad hoc} method.
-Users should only choose this method if direct application yields too many redundant results, or if the independent clusters are too large.
-Some loss of statistical rigour may be a necessary price to pay for interpretable results.
-
-%This problem can be avoided by performing pre-defined clustering based on large bin pairs.
-%Specifically, a large bin pair is defined and the set of all smaller bin pairs nested therein is defined as a cluster.
-%This is robust to high-density space as the definition of the cluster does not depend on the neighboring bin pairs.
-%Misinterpretation of the FDR is mitigated, as fewer bin pairs will represent each interaction when the bins are large.
-%Identification of these clusters can be achieved with the \code{boxPairs} function, as shown below.
-%
-%<<>>=
-%matched <- boxPairs(reference=bin.size, smaller=smaller.data)
-%tabcom <- combineTests(matched$indices$smaller, result.small$table)
-%head(tabcom)
-%sum(tabcom$FDR <= 0.05)
-%@
-%
-%The $p$-values for all of the smaller bin pairs are then combined using Simes' method.
-%The resulting combined $p$-value represents the evidence against the global null hypothesis for the larger bin pair, i.e., there are no significant differences in any of the smaller bin pairs nested within the larger bin pair.
-%The BH method is applied to the combined $p$-values to control the FDR across all larger bin pairs/interactions.
-%Rejection of the global null indicates that there is a change and that the larger bin pair is worth further investigation.
-%
-%As an aside, why would small bin pairs be used for diffuse interactions in the first place?
-%The motiviation behind this approach is that the interaction space contains both sharp and diffuse interactions.
-%The use of small bin pairs will optimally detect the former, while the nesting strategy protects against misinterpretation of the FDR by the latter.
 
 \subsection{Merging results from different bin widths}
 \label{sec:mergebins}
@@ -1867,9 +1897,19 @@ The choice of bin size is not clear when there are both sharp and diffuse change
 Smaller bins provide greater spatial resolution and can identify sharp differential interactions that would be lost within larger bin pairs.
 Conversely, larger bin pairs provide larger counts and greater power to detect diffuse events.
 Comprehensive detection of differential interactions can be achieved by combining analyses from several bin sizes.
+Both \code{diClusters} and \code{clusterPairs} accept multiple \code{InteractionSet} objects to cluster results from different bin sizes.
 
-To combine the results, the \code{boxPairs} function is used to identify all smaller bin pairs that are nested within each of the larger ``parent'' bin pairs.
-Specifically, smaller bin pairs are nested in a large bin pair if the former has the same ID as the latter in their respective \code{cons\$id} vectors.
+<<>>=
+merged.data <- list(larger=data, smaller=smaller.data)
+merged.results <- list(results$table, result.small$table)
+clustered.mult <- diClusters(merged.data, merged.results, target=0.05, cluster.args=list(tol=1))
+head(clustered.mult$indices$larger)
+head(clustered.mult$indices$smaller)
+@
+
+Alternatively, the \code{boxPairs} function can be used to identify all smaller bin pairs that are nested within each of the larger ``parent'' bin pairs.
+This acts as a form of independent clustering where all nested bin pairs are defined as a single cluster within the parent.
+Each set of nested bin pairs will only be reported once, reducing redundancy and limiting the potential for misinterpretation of the FDR.
 Note that the larger bin size \textit{must} be an integer multiple of the smaller bin size(s).
 This is necessary to simplify the interpretation of the nesting procedure.
 
@@ -1879,15 +1919,15 @@ head(boxed$indices$larger)
 head(boxed$indices$smaller)
 @
 
-Each parent bin pair is associated with its own $p$-value and those of the smaller nested bin pairs.
-All of these $p$-values can be combined into a single $p$-value for the parent.
-To do this, the \code{consolidatePairs} function uses a weighted version of Simes' method \citep{benjamini1997multiple}.
-For each bin pair, the weight of the $p$-value is inversely proportional to the number of bin pairs of the same size nested in the same parent.
-This ensures that the combined $p$-value calculation is not dominated by smaller, more numerous bin pairs.
+Statistics for each cluster can be computed using the \code{consolidatePairs} function.
+For independent clustering, this uses a weighted version of Simes' method to ensure each analysis contributes equally to the significance of each cluster \citep{benjamini1997multiple}.
+For each bin pair, the weight of the $p$-value is inversely proportional to the number of bin pairs of the same size in the same cluster. 
+This ensures that the combined $p$-value calculation for each cluster is not dominated by smaller, more numerous bin pairs.
+(Similarly, \code{diClusters} uses a frequency-weighted version of the FDR to ensure an equal contribution from each bin size during clustering.)
 The BH method is then applied to the combined $p$-values to control the FDR across all parents.
 
 <<>>=
-cons <- consolidatePairs(boxed$indices, list(result$table, result.small$table))
+cons <- consolidatePairs(boxed$indices, merged.results)
 head(cons)
 sum(cons$FDR <= 0.05)
 @
@@ -1901,27 +1941,11 @@ Statistics for each of the larger bin pairs can then be stored to file.
 Reordering is performed using the combined $p$-value to promote the strongest changes.
 
 <<>>=
-a1x.s <- boxed$anchor1
-a2x.s <- boxed$anchor2
-o.s <- order(cons$PValue)
-results.s <- data.frame(anchor1.chr=seqnames(a1x.s), anchor1.start=start(a1x.s), 
-    anchor1.end=end(a1x.s), anchor2.chr=seqnames(a2x.s), anchor2.start=start(a2x.s), 
-    anchor2.end=end(a2x.s), cons)
-write.table(results.s[o.s,], file="sizecons.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+results.n <- data.frame(anchor1=as.data.frame(boxed$anchor1)[,1:3],
+    anchor2=as.data.frame(boxed$anchor2)[,1:3], cons)
+o.n <- order(results.n$PValue)
+write.table(results.n[o.n,], file="nested.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
-
-Nesting also reduces redundancy in the results.
-The set of nested bin pairs will only be reported once, in the form of the parent bin pair.
-This limits the potential for misinterpretation of the FDR \citep{lun2014denovo}.
-Similarly, for sparse data, users can also use the \code{clusterPairs} function to replace \code{boxPairs} in the above call.
-This will compute a combined $p$-value for each cluster, based on the $p$-values of the bin pairs of varying sizes in each cluster.
-The cluster-level statistics can then be reported for easier interpretation.
-
-% The FDR across bin pairs is not the same as that across the true underlying interactions.
-% For large bin pairs, the two may be similar if one assumes that each bin pair roughly corresponds to an interaction.
-% This assumption is less reasonable when multiple smaller bin pairs are used to represent a diffuse interaction.
-% Misinterpreting one FDR as the other may result in loss of control.
-% Nesting provides some protection by ensuring that the FDR is computed over large bin pairs, even when detection is driven by small bin pairs.
 
 \subsection{Reporting nested bin pairs}
 \label{sec:nesting}
@@ -1931,18 +1955,16 @@ This means that any high-resolution changes nested within a large feature can be
 However, keep in mind that the FDR is computed with respect to the features, not the nested bin pairs.
 
 <<>>=
-small.ids <- boxed$indices$smaller
-inside <- csaw::getBestTest(small.ids, result.small$table)
+inside <- getBestTest(boxed$indices$smaller, result.small$table)
 a1x.n <- anchors(smaller.data[inside$best,], type="first")
 a2x.n <- anchors(smaller.data[inside$best,], type="second")
-nested <- data.frame(anchor1.start=start(a1x.n), anchor1.end=end(a1x.n),
-    anchor2.start=start(a2x.n), anchor2.end=end(a2x.n),
-    result.small$table[inside$best,c("logFC", "F")])
+nested <- data.frame(anchor1=as.data.frame(a1x.n)[,1:3],
+    anchor2=as.data.frame(a2x.n)[,1:3], inside[, c("logFC", "F")])
 head(nested)
 expanded <- rep(NA, nrow(results.s)) # As some parents do not have nested elements.
 expanded[as.integer(rownames(inside))] <- 1:nrow(inside)
 results.n <- data.frame(results.s, nest=nested[expanded,])
-write.table(results.n[o.s,], file="withnest.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+write.table(results.n[o.s,], file="nested_best.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 The above code only reports the top-ranked nested bin pair within each large feature.
