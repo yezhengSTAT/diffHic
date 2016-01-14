@@ -156,6 +156,7 @@ fit <- glmQLFit(y, design, robust=TRUE)
 \item testing for significant differences between groups
 <<>>=
 result <- glmQLFTest(fit)
+clusters <- diClusters(data, result$table, target=0.05, cluster.args=list(tol=1))
 @
 \end{enumerate}
 In the various examples for this guide, data will be used from three studies. 
