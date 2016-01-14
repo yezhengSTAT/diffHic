@@ -83,7 +83,11 @@ int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, co
 void parse_cigar (const bam1_t* read, int& alen, int& offset) {
     const uint32_t* cigar=bam_get_cigar(read);
     const int n_cigar=(read->core).n_cigar;
-    if (n_cigar==0) { 
+    if (n_cigar==0) {
+        if ((read -> core).flag & BAM_FUNMAP) {
+            alen=offset=0;
+            return;
+        }
         std::stringstream err;
         err << "zero-length CIGAR for read '" << bam_get_qname(read) << "'";
         throw std::runtime_error(err.str());
@@ -321,60 +325,59 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	int dangling=0, selfie=0;
 	int total_chim=0, mapped_chim=0, multi_chim=0, inv_chimeras=0;
 
-    bool isempty=true, isdup=false, isunmap=false, ischimera=false,
-		     isfirst=false, hasfirst=false, hassecond=false,
-		     curdup=false, curunmap=false, jump_to_next=false, should_be_added=false;
+    bool isempty=false, isfirst=false, curdup=false, curunmap=false, hasfirst=false, hassecond=false,
+         firstunmap=true, secondunmap=true, isdup=false, isunmap=false, ischimera=false;
+    int nsegments=0;
    	std::deque<segment> read1, read2;
 	segment current;
     std::string qname="";
 
     while (1) {
         isempty=true;
-        isdup=isunmap=ischimera=isfirst=hasfirst=hassecond=curdup=curunmap=false;
+        nsegments=0;
+        isfirst=curdup=curunmap=isdup=false;
+        firstunmap=secondunmap=true;
+        hasfirst=hassecond=false;
         read1.clear();
         read2.clear();
 
         while (input.read_alignment()) {
-            isempty=false;  
+            isempty=false;
             if (std::strcmp(bam_get_qname(input.read), qname.c_str())!=0) { 
                 // First one will pop out, but that's okay.
                 qname=bam_get_qname(input.read);
-                input.put_back(); 
+                input.put_back();
                 break;
             }
-
-            // Pulling out positional information:
-			current.reverse=bool(bam_is_rev(input.read));
-            const int32_t& curtid=(input.read -> core).tid;
-            if (curtid==-1) { // unmapped
-                current.chrid=0;
-            } else if (curtid >= nc) {
-                std::stringstream err;
-                err << "tid for read '" << bam_get_qname(input.read) << "' out of range of BAM header";
-                throw std::runtime_error(err.str());
-            } else {
-                current.chrid=converter[curtid];
-            }
-			current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
-			parse_cigar(input.read, current.alen, current.offset);
-            
-			// Checking how we should proceed; whether we should bother adding it or not.
-			curdup=bool((input.read -> core).flag & BAM_FDUP);
-			curunmap=(bool((input.read -> core).flag & BAM_FUNMAP) || (rm_min && (input.read -> core).qual < minq));
-			if (current.offset==0) {
-				if (curdup) { isdup=true; }
-				if (curunmap) { isunmap=true; }
-			} else {
-				ischimera=true;
-			}
+            ++nsegments;
 
             // Checking what the read is (first or second).
 			isfirst=bool((input.read -> core).flag & BAM_FREAD1);
 			if (isfirst) { hasfirst=true; }
 			else { hassecond=true; }
+            
+			// Checking how we should proceed; whether we should bother adding it or not.
+			curdup=bool((input.read -> core).flag & BAM_FDUP);
+			curunmap=(bool((input.read -> core).flag & BAM_FUNMAP) || (rm_min && (input.read -> core).qual < minq));
+			parse_cigar(input.read, current.alen, current.offset);
+            if (current.offset==0 && current.alen > 0) { 
+                if (curdup) { isdup=true; } // defaults to 'false' unless we have a definitive setting of markingness.
+                if (!curunmap) { (isfirst ? firstunmap : secondunmap)=false; } // defaults to 'true' unless we know it's mapped (unmapped reads get alen=0 and won't reach here). 
+            }
 
 			// Checking which deque to put it in, if we're going to keep it.
             if (! (curdup && rm_dup) && ! curunmap) {
+                current.reverse=bool(bam_is_rev(input.read));
+                const int32_t& curtid=(input.read -> core).tid;
+                if (curtid==-1 || curtid >= nc) {
+                    std::stringstream err;
+                    err << "tid for read '" << bam_get_qname(input.read) << "' out of range of BAM header";
+                    throw std::runtime_error(err.str());
+                } else {
+                    current.chrid=converter[curtid];
+                }
+                current.pos=(input.read->core).pos + 1; // code assumes 1-based index for base position.
+
                 std::deque<segment>& current_reads=(isfirst ? read1 : read2);
                 if (current.offset==0) { current_reads.push_front(current); } 
                 else { current_reads.push_back(current); }
@@ -385,15 +388,17 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
         if (isempty) { break; }
 
 		// Skipping if it's a singleton; otherwise, reporting it as part of the total read pairs.
-		if (! (hasfirst && hassecond)) {
+		if (!hasfirst || !hassecond) {
 			++single;
 			continue;
 		}
 		++total;
 
 		// Adding to other statistics.
+        ischimera=(nsegments > 2);
 		if (ischimera) { ++total_chim; }
 		if (isdup) { ++dupped; }
+        isunmap=(firstunmap | secondunmap);
 		if (isunmap) { ++filtered; }
 
 		/* Skipping if unmapped, marked (and we're removing them), and if the first alignment
