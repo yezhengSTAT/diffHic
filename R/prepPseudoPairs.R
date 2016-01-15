@@ -54,7 +54,9 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=
 
     out <- .Call(cxx_report_hic_binned_pairs, n.per.chr, bin.width, m-1L, path.expand(bam), prefix, !ichim, chim.span, minq, dedup)
     if (is.character(out)) { stop(out) }
-    .process_output(out, file, chrs, before.first)
+    final <- .process_output(out, file, chrs, before.first)
+    final$same.id <- NULL
+    return(final)
 }
 
 segmentGenome <- function(bs, size=500) 
