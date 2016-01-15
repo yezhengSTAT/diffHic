@@ -17,7 +17,7 @@ boxPairs <- function(..., reference, minbox=FALSE)
 	for (x in all.hits[-1]) { 
         curfrag <- metadata(x)$param$fragments
 		if (length(curfrag)!=length(fragments) || any(curfrag!=fragments)) { 
-			stop("fragment boundaries should be the same between DIList objects")
+			stop("fragment boundaries should be the same between InteractionSet objects")
 		}
 	}
 	parents <- .getBinID(fragments, reference)$region
