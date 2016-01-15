@@ -2286,7 +2286,7 @@ color.range <- c(-5, 5)
 temp <- as.matrix(output$chr5$matrix)
 temp[temp < color.range[1]] <- color.range[1]
 temp[temp > color.range[2]] <- color.range[2]
-image(temp, zlim=color.range)
+image(as.matrix(temp), zlim=color.range)
 current <- output$chr5$compartment
 stretches <- rle(current)
 ends <- cumsum(stretches$lengths) - 0.5
