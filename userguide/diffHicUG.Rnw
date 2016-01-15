@@ -1995,7 +1995,7 @@ rect(start(a1x.s[chosen]), start(a2x.s[chosen]), end(a1x.s[chosen]), end(a2x.s[c
 @
 
 <<eval=FALSE,echo=FALSE,label=setup>>=
-chosen <- o.s[1]
+chosen <- o.n[1]
 expanded1 <- resize(a1x.s[chosen], fix="center", width=bin.size*5)
 expanded2 <- resize(a2x.s[chosen], fix="center", width=bin.size*5)
 cap.wt <- 100
@@ -2061,7 +2061,7 @@ rect(start(a1x.d[chosen]), start(a2x.d[chosen]), end(a1x.d[chosen]), end(a2x.d[c
 @
 
 <<eval=FALSE,echo=FALSE,label=setup2>>=
-chosen <- o.d[1]
+chosen <- o.r[1]
 expanded1 <- resize(a1x.d[chosen], fix="center", width=bin.size*5)
 expanded2 <- resize(a2x.d[chosen], fix="center", width=bin.size*5)
 cap.wt <- 30
@@ -2112,7 +2112,7 @@ rotPlaid(input[3], mm.param, region=example, width=2.5e4,
 @
 
 <<eval=TRUE,echo=FALSE,label=rotset>>=
-chosen <- o.s[3]
+chosen <- o.n[3]
 example <- a2x.s[chosen]
 end(example) <- end(a1x.s[chosen])
 nest.mid.a1 <- (results.n$nest.anchor1.start[chosen]+results.n$nest.anchor1.end[chosen])/2
@@ -2166,7 +2166,7 @@ The latter features may be constant between libraries and, thus, not of any part
 The log-fold changes also incorporate normalization information, which is difficult to represent on a count-based plaid plot.
 
 <<label=diplot,eval=FALSE>>=
-chosen <- o.d[5]
+chosen <- o.r[5]
 expanded1 <- resize(a1x.d[chosen], fix="center", width=5e7)
 expanded2 <- resize(a2x.d[chosen], fix="center", width=5e7)
 colfun <- plotDI(data, result$table$logFC, expanded1, expanded2, diag=FALSE)
