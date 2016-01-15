@@ -19,6 +19,9 @@ Added the diClusters() function for post-hoc cluster-level FDR control.
 Added the annotatePairs() function for convenient annotation of (clusters of) interactions.
 
 \item
+Fixed a bug in plotPlaid() when the interaction space was empty.
+
+\item
 Fixed a bug in preparePairs() where unmapped chimeric segments led to the loss of the entire pair.
 
 \item
