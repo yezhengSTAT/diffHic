@@ -1983,19 +1983,21 @@ The color of the pixel is proportional to the number of read pairs mapped betwee
 <<label=plaid1,eval=FALSE,echo=FALSE>>=
 plotPlaid(input[1], first=expanded1, second=expanded2, max.count=cap.wt, 
     width=5e4, param=mm.param, main="Flox")
-rect(start(a1x.s[chosen]), start(a2x.s[chosen]), end(a1x.s[chosen]), end(a2x.s[chosen]))
+rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 @
 
 <<label=plaid3,eval=FALSE,echo=FALSE>>=
 plotPlaid(input[3], first=expanded1, second=expanded2, max.count=cap.ko, 
     width=5e4, param=mm.param, main="KO")
-rect(start(a1x.s[chosen]), start(a2x.s[chosen]), end(a1x.s[chosen]), end(a2x.s[chosen]))
+rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 @
 
 <<eval=FALSE,echo=FALSE,label=setup>>=
 chosen <- o.n[1]
-expanded1 <- resize(a1x.s[chosen], fix="center", width=bin.size*5)
-expanded2 <- resize(a2x.s[chosen], fix="center", width=bin.size*5)
+chosen.a1 <- boxed$anchor1[chosen]
+chosen.a2 <- boxed$anchor2[chosen]
+expanded1 <- resize(chosen.a1, fix="center", width=bin.size*5)
+expanded2 <- resize(chosen.a2, fix="center", width=bin.size*5)
 cap.wt <- 100
 cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 @
@@ -2008,8 +2010,8 @@ cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 
 <<results=hide,echo=FALSE>>=
 <<setup>>
-if (as.character(seqnames(a1x.s[chosen]))!="chr11" || start(a1x.s[chosen])!=30001298 || end(a1x.s[chosen])!=31000010 ||
-    as.character(seqnames(a2x.s[chosen]))!="chr11" || start(a2x.s[chosen])!=29000942 || end(a2x.s[chosen])!=30001301) {
+if (as.character(seqnames(chosen.a1))!="chr11" || start(chosen.a1)!=30001298 || end(chosen.a1)!=31000010 ||
+    as.character(seqnames(chosen.a2))!="chr11" || start(chosen.a2)!=29000942 || end(chosen.a2)!=30001301) {
 	warning("first plaid plot hits the wrong spot")
 }
 @
@@ -2049,19 +2051,21 @@ Of course, any sharp changes within each of these large bin pairs will be overlo
 <<label=plaid1b,eval=FALSE,echo=FALSE>>=
 plotPlaid(input[1], first=expanded1, second=expanded2, max.count=cap.wt, 
     width=5e4, param=mm.param, main="Flox")
-rect(start(a1x.d[chosen]), start(a2x.d[chosen]), end(a1x.d[chosen]), end(a2x.d[chosen]))
+rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 @
 
 <<label=plaid3b,eval=FALSE,echo=FALSE>>=
 plotPlaid(input[3], first=expanded1, second=expanded2, max.count=cap.ko, 
     width=5e4, param=mm.param, main="KO")
-rect(start(a1x.d[chosen]), start(a2x.d[chosen]), end(a1x.d[chosen]), end(a2x.d[chosen]))
+rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 @
 
 <<eval=FALSE,echo=FALSE,label=setup2>>=
 chosen <- o.r[1]
-expanded1 <- resize(a1x.d[chosen], fix="center", width=bin.size*5)
-expanded2 <- resize(a2x.d[chosen], fix="center", width=bin.size*5)
+chosen.a1 <- anchors(data[chosen], type="first")
+chosen.a2 <- anchors(data[chosen], type="second")
+expanded1 <- resize(chosen.a1, fix="center", width=bin.size*5)
+expanded2 <- resize(chosen.a2, fix="center", width=bin.size*5)
 cap.wt <- 30
 cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 @
@@ -2074,8 +2078,8 @@ cap.ko <- cap.wt*data$totals[3]/data$totals[1]
 
 <<results=hide,echo=FALSE>>=
 <<setup2>>
-if (as.character(seqnames(a1x.d[chosen]))!="chr3" || start(a1x.d[chosen])!=151001261 || end(a1x.d[chosen])!=152002835 ||
-    as.character(seqnames(a2x.d[chosen]))!="chr3" || start(a2x.d[chosen])!=145998892 || end(a2x.d[chosen])!=147005847) {
+if (as.character(seqnames(chosen.a1))!="chr3" || start(chosen.a1)!=151001261 || end(chosen.a1)!=152002835 ||
+    as.character(seqnames(chosen.a2))!="chr3" || start(chosen.a2)!=145998892 || end(chosen.a2)!=147005847) {
 	warning("second plaid plot hits the wrong spot")
 }
 @
@@ -2111,8 +2115,8 @@ rotPlaid(input[3], mm.param, region=example, width=2.5e4,
 
 <<eval=TRUE,echo=FALSE,label=rotset>>=
 chosen <- o.n[3]
-example <- a2x.s[chosen]
-end(example) <- end(a1x.s[chosen])
+example <- boxed$anchor2[chosen]
+end(example) <- end(boxed$anchor1[chosen])
 nest.mid.a1 <- (results.n$nest.anchor1.start[chosen]+results.n$nest.anchor1.end[chosen])/2
 nest.mid.a2 <- (results.n$nest.anchor2.start[chosen]+results.n$nest.anchor2.end[chosen])/2
 nest.mid <- (nest.mid.a1 + nest.mid.a2)/2
@@ -2120,8 +2124,10 @@ nest.gap <- nest.mid.a1 - nest.mid.a2
 @
 
 <<echo=FALSE,results=hide>>=
-if (as.character(seqnames(a1x.s[chosen]))!="chr2" || start(a1x.s[chosen])!=136998216 || end(a1x.s[chosen])!=138001392 ||
-    as.character(seqnames(a2x.s[chosen]))!="chr2" || start(a2x.s[chosen])!=136001779 || end(a2x.s[chosen])!=136998219) {
+.chosen.a1 <- boxed$anchor1[chosen]
+.chosen.a2 <- boxed$anchor2[chosen]
+if (as.character(seqnames(.chosen.a1))!="chr2" || start(.chosen.a1)!=136998216 || end(.chosen.a1)!=138001392 ||
+    as.character(seqnames(.chosen.a2))!="chr2" || start(.chosen.a2)!=136001779 || end(.chosen.a2)!=136998219) {
 	warning("third plaid plot hits the wrong spot")
 }
 @
@@ -2165,8 +2171,10 @@ The log-fold changes also incorporate normalization information, which is diffic
 
 <<label=diplot,eval=FALSE>>=
 chosen <- o.r[5]
-expanded1 <- resize(a1x.d[chosen], fix="center", width=5e7)
-expanded2 <- resize(a2x.d[chosen], fix="center", width=5e7)
+chosen.a1 <- anchors(data[chosen], type="first")
+chosen.a2 <- anchors(data[chosen], type="second")
+expanded1 <- resize(chosen.a1, fix="center", width=5e7)
+expanded2 <- resize(chosen.a2, fix="center", width=5e7)
 colfun <- plotDI(data, result$table$logFC, expanded1, expanded2, diag=FALSE)
 @
 
@@ -2179,8 +2187,8 @@ colfun <- plotDI(data, result$table$logFC, expanded1, expanded2, diag=FALSE)
 \setkeys{Gin}{width=0.8\textwidth}
 
 <<results=hide,echo=FALSE>>=
-if (as.character(seqnames(a1x.d[chosen]))!="chr16" || start(a1x.d[chosen])!=70000341 || end(a1x.d[chosen])!=70999295 ||
-    as.character(seqnames(a2x.d[chosen]))!="chr16" || start(a2x.d[chosen])!=65999261 || end(a2x.d[chosen])!=67001066) {
+if (as.character(seqnames(chosen.a1))!="chr16" || start(chosen.a1)!=70000341 || end(chosen.a1)!=70999295 ||
+    as.character(seqnames(chosen.a2))!="chr16" || start(chosen.a2)!=65999261 || end(chosen.a2)!=67001066) {
 	warning("first DI plot hits the wrong spot")
 }
 @
