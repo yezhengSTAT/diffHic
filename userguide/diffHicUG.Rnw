@@ -1827,7 +1827,7 @@ results.d <- data.frame(anchor1=as.data.frame(clustered.sig$anchor1)[,1:3],
     anchor2=as.data.frame(clustered.sig$anchor2)[,1:3], tabcom[,1:4], 
     logFC=tabbest$logFC, FDR=clustered.sig$FDR)
 o.d <- order(results.d$PValue)
-write.table(results.d[o.d,], file="clustered.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+write.table(results.d[o.d,], file="DIclusters.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 \subsection{Independent clustering of adjacent bin pairs}
@@ -1940,10 +1940,10 @@ Statistics for each of the larger bin pairs can then be stored to file.
 Reordering is performed using the combined $p$-value to promote the strongest changes.
 
 <<>>=
-results.n <- data.frame(anchor1=as.data.frame(boxed$anchor1)[,1:3],
+results.b <- data.frame(anchor1=as.data.frame(boxed$anchor1)[,1:3],
     anchor2=as.data.frame(boxed$anchor2)[,1:3], cons)
-o.n <- order(results.n$PValue)
-write.table(results.n[o.n,], file="nested.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+o.b <- order(results.b$PValue)
+write.table(results.b[o.b,], file="boxed.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 \subsection{Reporting nested bin pairs}
@@ -1960,10 +1960,10 @@ a2x.n <- anchors(smaller.data[inside$best,], type="second")
 nested <- data.frame(anchor1=as.data.frame(a1x.n)[,2:3],
     anchor2=as.data.frame(a2x.n)[,2:3], inside[, c("logFC", "F")])
 head(nested)
-expanded <- rep(NA, nrow(results.n)) # As some parents do not have nested elements.
+expanded <- rep(NA, nrow(results.b)) # As some parents do not have nested elements.
 expanded[as.integer(rownames(inside))] <- seq_len(nrow(inside))
-results.n <- data.frame(results.n, nest=nested[expanded,])
-write.table(results.n[o.n,], file="nested_best.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+results.b <- data.frame(results.b, best=nested[expanded,])
+write.table(results.b[o.b,], file="boxed_best.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 The above code only reports the top-ranked nested bin pair within each large feature.
@@ -1993,7 +1993,7 @@ rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 @
 
 <<eval=FALSE,echo=FALSE,label=setup>>=
-chosen <- o.n[1]
+chosen <- o.b[1]
 chosen.a1 <- boxed$anchor1[chosen]
 chosen.a2 <- boxed$anchor2[chosen]
 expanded1 <- resize(chosen.a1, fix="center", width=bin.size*5)
@@ -2114,13 +2114,13 @@ rotPlaid(input[3], mm.param, region=example, width=2.5e4,
 @
 
 <<eval=TRUE,echo=FALSE,label=rotset>>=
-chosen <- o.n[3]
+chosen <- o.b[3]
 example <- boxed$anchor2[chosen]
 end(example) <- end(boxed$anchor1[chosen])
-nest.mid.a1 <- (results.n$nest.anchor1.start[chosen]+results.n$nest.anchor1.end[chosen])/2
-nest.mid.a2 <- (results.n$nest.anchor2.start[chosen]+results.n$nest.anchor2.end[chosen])/2
-nest.mid <- (nest.mid.a1 + nest.mid.a2)/2
-nest.gap <- nest.mid.a1 - nest.mid.a2
+best.mid.a1 <- (results.b$best.anchor1.start[chosen]+results.b$best.anchor1.end[chosen])/2
+best.mid.a2 <- (results.b$best.anchor2.start[chosen]+results.b$best.anchor2.end[chosen])/2
+best.mid <- (best.mid.a1 + best.mid.a2)/2
+best.gap <- best.mid.a1 - best.mid.a2
 @
 
 <<echo=FALSE,results=hide>>=
@@ -2133,7 +2133,7 @@ if (as.character(seqnames(.chosen.a1))!="chr2" || start(.chosen.a1)!=136998216 |
 @
 
 <<eval=FALSE,echo=FALSE,label=enbox>>=
-points(nest.mid, nest.gap, cex=7) 
+points(best.mid, best.gap, cex=7) 
 @
 
 <<eval=FALSE>>=
