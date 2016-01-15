@@ -1959,13 +1959,13 @@ However, keep in mind that the FDR is computed with respect to the features, not
 inside <- getBestTest(boxed$indices$smaller, result.small$table)
 a1x.n <- anchors(smaller.data[inside$best,], type="first")
 a2x.n <- anchors(smaller.data[inside$best,], type="second")
-nested <- data.frame(anchor1=as.data.frame(a1x.n)[,1:3],
-    anchor2=as.data.frame(a2x.n)[,1:3], inside[, c("logFC", "F")])
+nested <- data.frame(anchor1=as.data.frame(a1x.n)[,2:3],
+    anchor2=as.data.frame(a2x.n)[,2:3], inside[, c("logFC", "F")])
 head(nested)
-expanded <- rep(NA, nrow(results.s)) # As some parents do not have nested elements.
-expanded[as.integer(rownames(inside))] <- 1:nrow(inside)
-results.n <- data.frame(results.s, nest=nested[expanded,])
-write.table(results.n[o.s,], file="nested_best.tsv", sep="\t", quote=FALSE, row.names=FALSE)
+expanded <- rep(NA, nrow(results.n)) # As some parents do not have nested elements.
+expanded[as.integer(rownames(inside))] <- seq_len(nrow(inside))
+results.n <- data.frame(results.n, nest=nested[expanded,])
+write.table(results.n[o.n,], file="nested_best.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
 
 The above code only reports the top-ranked nested bin pair within each large feature.
