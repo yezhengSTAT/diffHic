@@ -229,6 +229,6 @@ setMethod("normalize", signature("DIList"), function(object, lib.sizes, ...) {
 
 DI2IS <- function(x) {
     InteractionSet(list(counts=counts(x)), 
-                   GInteractions(anchor1=anchors(x, id=TRUE), anchor2=targets(x, id=TRUE), regions=regions(x)), 
-                   colData=colData(x), metadata=exptData(x), mode="reverse")
+                   GInteractions(anchor1=anchors(x, id=TRUE), anchor2=targets(x, id=TRUE), regions=regions(x), mode="reverse"),
+                   colData=colData(x), metadata=exptData(x))
 }
