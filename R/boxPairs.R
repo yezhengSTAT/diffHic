@@ -1,4 +1,4 @@
-boxPairs <- function(..., reference, minbox=FALSE)
+boxPairs <- function(..., reference, minbox=FALSE, index.only=FALSE)
 # This function reports bin pairs that are nested within other bin pairs.  The
 # idea is to consolidate smaller bin pairs into their larger counterparts for
 # summarization of analyses involving multiple bin sizes.
@@ -63,6 +63,9 @@ boxPairs <- function(..., reference, minbox=FALSE)
 		indices[[x]] <- current.out
 	}
 	names(indices) <- names(all.hits)
+    if (index.only) { 
+        return(indices)
+    }
 	
 	# Selecting the boundaries to report.
 	if (minbox) {
@@ -83,13 +86,11 @@ boxPairs <- function(..., reference, minbox=FALSE)
 		}
 		boxed <- .minBoundingBox(unlist(indices), unlist(a.chrs), unlist(a.starts), unlist(a.ends), 
 			unlist(t.chrs), unlist(t.starts), unlist(t.ends), seqinfo(parents))
-		anchors <- boxed$anchors
-		targets <- boxed$targets
+        output <- GInteractions(boxed$anchors, boxed$targets, mode="reverse")
 	} else {
-		anchors <- parents[all.a[is.diff]]
-		targets <- parents[all.t[is.diff]]
+        output <- GInteractions(all.a[is.diff], all.t[is.diff], parents, mode="reverse")
 	}
-	return(list(indices=indices, anchor1=anchors, anchor2=targets))
+	return(list(indices=indices, interactions=output))
 }
 
 .check_StrictGI <- function(x) {
