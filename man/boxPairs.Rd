@@ -53,7 +53,8 @@ This is largely for efficiency purposes when \code{boxPairs} is called by intern
 }
 
 \seealso{
-\code{\link{squareCounts}}
+\code{\link{squareCounts}},
+\code{\link{clusterPairs}}
 }
 
 \author{
