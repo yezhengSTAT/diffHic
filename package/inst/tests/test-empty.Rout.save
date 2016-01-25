@@ -149,17 +149,10 @@ $indices[[1]]
 integer(0)
 
 
-$anchor1
-GRanges object with 0 ranges and 0 metadata columns:
-   seqnames    ranges strand
-      <Rle> <IRanges>  <Rle>
-  -------
-  seqinfo: 1 sequence from an unspecified genome; no seqlengths
-
-$anchor2
-GRanges object with 0 ranges and 0 metadata columns:
-   seqnames    ranges strand
-      <Rle> <IRanges>  <Rle>
+$interactions
+ReverseStrictGInteractions object with 0 interactions between 0 regions and 0 metadata columns:
+   seqnames1   ranges1     seqnames2   ranges2
+       <Rle> <IRanges>         <Rle> <IRanges>
   -------
   seqinfo: 1 sequence from an unspecified genome; no seqlengths
 
@@ -178,4 +171,4 @@ character(0)
 > 
 > proc.time()
    user  system elapsed 
-  9.737   0.142   9.872 
+  7.642   0.166   7.822 
