@@ -5,20 +5,24 @@
 \description{Aggregate bin pairs into local clusters for summarization.}
 
 \usage{
-clusterPairs(..., tol, upper=1e6)
+clusterPairs(..., tol, upper=1e6, index.only=FALSE)
 }
 
 \arguments{
-\item{...}{one or more InteractionSet objects, optionally named}
-\item{tol}{a numeric scalar specifying the maximum distance between bin pairs}
-\item{upper}{a numeric scalar specifying the maximum size of each cluster}
+\item{...}{One or more InteractionSet objects, optionally named.}
+\item{tol}{A numeric scalar specifying the maximum distance between bin pairs in base pairs.}
+\item{upper}{A numeric scalar specifying the maximum size of each cluster in base pairs.}
+\item{index.only}{A logical scalar indicating whether only indices should be returned.}
+
 }
 
 \value{
-A list containing:
-\item{indices}{a named list of integer vectors where each vector contains a cluster ID for each interaction in the corresponding input InteractionSet object}
-\item{anchor1, anchor2}{GRanges objects containing the coordinates of the sides of the bounding box for each cluster}
-
+If \code{index.only=FALSE}, a named list is returned containing:
+\describe{
+\item{\code{indices}:}{A named list of integer vectors where each vector contains a cluster ID for each interaction in the corresponding input InteractionSet object.}
+\item{\code{interactions}:}{A ReverseStrictGInteractions object containing the coordinates of the sides of the bounding box for each cluster.}
+}
+If \code{index.only=TRUE}, the \code{indices} are returned directly without computing coordinates.
 }
 
 \details{
@@ -41,12 +45,17 @@ This aims to improve the spatial interpretability of the clustering result.
 
 There is no guarantee that each cluster forms a regular shape in the interaction space.
 Instead, a minimum bounding box is reported containing all bin pairs in each cluster.
-The coordinates of the box for each cluster is stored in each row of the output \code{anchor1} and \code{anchor2}.
+The coordinates of the box for each cluster is stored in each row of the output \code{interactions}.
 The cluster ID in each \code{indices} vector represents the row index for these coordinates.
+
+If \code{index.only=TRUE}, only the indices are returned and coordinates of the bounding box are not computed. 
+This is largely for efficiency purposes when \code{clusterPairs} is called by internal functions.
 }
 
 \seealso{
-\code{\link{squareCounts}}
+\code{\link{squareCounts}},
+\code{\link{diClusters}},
+\code{\link{boxPairs}}
 }
 
 \author{
