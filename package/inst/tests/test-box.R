@@ -29,15 +29,15 @@ comp <- function(reference, widths, minbox=FALSE) {
 		curlist <- collected[[x]]
 
 		# Checking that each bin pair is truly nested within its reported parent.
-		parent.a <- output$anchor1[curdex]
-		parent.t <- output$anchor2[curdex]
+		parent.a <- anchors(output$interactions[curdex], type="first")
+		parent.t <- anchors(output$interactions[curdex], type="second")
 		current.a <- anchors(curlist, type="first")
 		current.t <- anchors(curlist, type="second")
 		
 		if (! all(seqnames(parent.a)==seqnames(current.a) & start(parent.a) <= start(current.a) & end(parent.a) >= end(current.a)) ) { stop("anchor ranges not nested in parent") }
 		if (! all(seqnames(parent.t)==seqnames(current.t) & start(parent.t) <= start(current.t) & end(parent.t) >= end(current.t)) ) { stop("target ranges not nested in parent") }
 	}
-
+	
 	if (minbox) { 
 		# Checking that the minimum bounding box was correctly assigned.
 		all.anchor1 <- all.anchor2 <- list()
@@ -48,9 +48,12 @@ comp <- function(reference, widths, minbox=FALSE) {
 		gathered.a <- unlist(range(split(do.call(c, all.anchor1), unlist(output$indices))))
 		gathered.t <- unlist(range(split(do.call(c, all.anchor2), unlist(output$indices))))
 		names(gathered.a) <- names(gathered.t) <- NULL
-		if (!identical(gathered.a, output$anchor1) || !identical(gathered.t, output$anchor2)) { stop("mismatch in bounding boxes") }
+		if (!identical(gathered.a, anchors(output$interactions, type="first")) || 
+            !identical(gathered.t, anchors(output$interactions, type="second"))) { stop("mismatch in bounding boxes") }
 	}	
 
+    nocom <- do.call(boxPairs, c(collected, reference=reference, minbox=minbox, index.only=TRUE))
+    if (!identical(nocom, output$indices)) { stop("results aren't the same with index.only=TRUE") }
 	return(lapply(output$indices, FUN=head))
 }
 
