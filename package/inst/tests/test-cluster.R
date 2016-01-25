@@ -160,11 +160,20 @@ clustercomp <- function(data, tol, maxw, split=FALSE, data2=NULL) {
 	} 
 	if (!crisscross(id.comp, myid2)) { stop("mismatches in cluster IDs when a maximum bin size is applied") }
 
+    # Checking it's the same with index.only=TRUE.
+	if (!is.null(data2)) { 
+		icomp <- clusterPairs(original, data2, tol=tol, upper=maxw, index.only=TRUE)
+	} else {
+		icomp <- clusterPairs(data, tol=tol, upper=maxw, index.only=TRUE)
+	} 
+	if (!identical(icomp, comp2$indices)) { stop("different behaviour with index.only=TRUE") }
+
 	# Checking the bounding boxes.
 	a1range <- range(split(anchors(data, type="first"), myid2))
 	a2range <- range(split(anchors(data, type="second"), myid2))
 	names(a1range) <- names(a2range) <- NULL
-	if (!identical(comp2$anchor1, unlist(a1range)) || !identical(comp2$anchor2, unlist(a2range))) {
+	if (!identical(anchors(comp2$interactions, type="first"), unlist(a1range)) || 
+        !identical(anchors(comp2$interactions, type="second"), unlist(a2range))) {
 		stop("mismatches in anchor1/anchor2 bounding box coordinates")
 	}
 
