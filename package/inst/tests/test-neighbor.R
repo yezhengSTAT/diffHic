@@ -190,12 +190,12 @@ comp2 <- function(npairs1, npairs2, width, cuts, filter=1, flank=5, exclude=0, p
 	enrichment <- enrichedPairs(ref, flank=flank, prior.count=prior.count, exclude=exclude)
 
     subref <- ref[keep,]
-	if (!identical(regions(subref), regions(out$interaction))) { stop("extracted regions don't match up") }
-	if (!identical(anchors(subref), anchors(out$interaction))) { stop("extracted anchors don't match up") }
-	if (!identical(assays(subref), assays(out$interaction))) { stop("extracted counts don't match up") }
-	if (!identical(colData(subref), colData(out$interaction))) { stop("extracted colData doesn't match up") }
-	if (!identical(metadata(subref), metadata(out$interaction))) { stop("extracted metadata doesn't match up") }
-	if (any(abs(enrichment[keep] - out$enrichment) > 1e-6)) { stop("enrichment values don't match up") }
+	if (!identical(regions(subref), regions(out))) { stop("extracted regions don't match up") }
+	if (!identical(anchors(subref), anchors(out))) { stop("extracted anchors don't match up") }
+	if (!identical(assays(subref), assays(out))) { stop("extracted counts don't match up") }
+	if (!identical(colData(subref), colData(out))) { stop("extracted colData doesn't match up") }
+	if (!identical(metadata(subref), metadata(out))) { stop("extracted metadata doesn't match up") }
+	if (any(abs(enrichment[keep] - mcols(out)$enrichment) > 1e-6)) { stop("enrichment values don't match up") }
 	return(head(enrichment[keep]))
 }
 
