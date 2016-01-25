@@ -71,6 +71,7 @@ result1$PValue[sample(nrow(result1), 50)] <- 0
 
 # Consolidating with post-hoc control.
 out <- diClusters(y1, result1, target=0.05, cluster.args=list(tol=1))
+out
 }
 
 \keyword{testing}

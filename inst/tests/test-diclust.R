@@ -15,8 +15,8 @@ checkResults <- function(data.list, result.list, pval.col="PValue", tol, ..., tr
         ref <- data.list[was.sig,]
     }
     bbox <- boundingBox(ref, all.ids[was.sig])
-    stopifnot(all(bbox$first==out$anchor1))
-    stopifnot(all(bbox$second==out$anchor2))
+    stopifnot(all(bbox$first==anchors(out$interactions, type="first")))
+    stopifnot(all(bbox$second==anchors(out$interactions, type="second")))
 
     # Checking that the right interactions were chosen.
     if (is.data.frame(result.list)) { 
@@ -27,8 +27,8 @@ checkResults <- function(data.list, result.list, pval.col="PValue", tol, ..., tr
     if (any(was.sig) && any(!was.sig)) { stopifnot(max(all.ps[was.sig]) < min(all.ps[!was.sig])) }
 
     # Reporting the observed and estimated FDRs.
-    np <- sum(!overlapsAny(GRangesList(out$anchor1, out$anchor2), true.pos))
-    return(data.frame(Observed=np/length(out$anchor1), Estimated=out$FDR))
+    np <- sum(!overlapsAny(out$interactions, true.pos))
+    return(data.frame(Observed=np/length(out$interactions), Estimated=out$FDR))
 }
 
 set.seed(100)
