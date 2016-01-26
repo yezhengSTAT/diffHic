@@ -45,7 +45,7 @@
 % Set to change date for document, not compile date.
 \date{First edition 12 December 2012\\
 \vspace{6pt}
-Last revised 14 January 2016}
+Last revised 26 January 2016}
 
 % Removing the bibliography title so it shows up in the contents.
 \makeatletter
@@ -988,8 +988,8 @@ This reduces memory usage at the cost of some speed.
 
 <<>>=
 en.data <- neighborCounts(input, param, width=1e5, filter=20, flank=5)
-en.data$interaction
-head(en.data$enrichment)
+en.data
+head(mcols(en.data)$enrichment)
 @
 
 % As an aside, no adjustment is done for the effect of distance on abundance for intra-chromosomal pairs.
@@ -1761,8 +1761,8 @@ The coordinates of this rectangle can be easily recorded, whereas it is more dif
 Identification of the top-ranking bin pair within each cluster may also be desirable (see Section~\ref{sec:nesting}).
 
 <<>>=
-clustered.small$anchor1
-clustered.small$anchor2
+length(clustered.small$interactions)
+head(clustered.small$interactions)
 @
 
 The FDR across clusters is not the same as that across bin pairs.
@@ -1786,7 +1786,8 @@ This is more useful than reporting the coordinates for an entire domain if only 
 
 <<>>=
 clustered.sig <- diClusters(data, result$table, target=0.05, cluster.args=list(tol=1))
-length(clustered.sig$anchor1)
+length(clustered.sig$interactions)
+head(clustered.sig$interactions)
 @
 
 The \code{clusterPairs} function is used internally to cluster significant bin pairs. 
@@ -1823,9 +1824,9 @@ The combined $p$-value from \code{combineTests} is stored but is only used for s
 Resorting makes it easier to parse the final table, as the most interesting differential interactions are placed at the top.
 
 <<>>=
-results.d <- data.frame(anchor1=as.data.frame(clustered.sig$anchor1)[,1:3], 
-    anchor2=as.data.frame(clustered.sig$anchor2)[,1:3], tabcom[,1:4], 
-    logFC=tabbest$logFC, FDR=clustered.sig$FDR)
+useful.cols <- as.vector(outer(c("seqnames", "start", "end"), 1:2, paste0))
+results.d <- data.frame(as.data.frame(clustered.sig$interactions)[,useful.cols],
+    tabcom[,1:4], logFC=tabbest$logFC, FDR=clustered.sig$FDR)
 o.d <- order(results.d$PValue)
 write.table(results.d[o.d,], file="DIclusters.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1868,8 +1869,8 @@ Here, the $p$-value and FDR from \code{combineTests} are retained as they have v
 Metrics from \code{getBestTest} can also be added.
 
 <<>>=
-results.i <- data.frame(anchor1=as.data.frame(clustered.small$anchor1)[,1:3], 
-    anchor2=as.data.frame(clustered.small$anchor2)[,1:3], tabcluster)
+inter.frame <- as.data.frame(clustered.small$interactions)[,useful.cols]
+results.i <- data.frame(inter.frame, tabcluster)
 o.i <- order(results.i$PValue)
 write.table(results.i[o.i,], file="independent.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1884,8 +1885,8 @@ These can be saved to file along with the bin pair-based results.
 <<>>=
 adj.p <- p.adjust(result$table$PValue, method="BH")
 sum(adj.p <= 0.05)
-results.r <- data.frame(anchor1=as.data.frame(anchors(data, type="first"))[,1:3],
-    anchor2=as.data.frame(anchors(data, type="second"))[,1:3], result$table, FDR=adj.p)
+inter.frame <- as.data.frame(interactions(data))[,useful.cols]
+results.r <- data.frame(inter.frame, result$table, FDR=adj.p)
 o.r <- order(results.r$PValue)
 write.table(results.r[o.r,], file="binpairs.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1901,9 +1902,9 @@ Both \code{diClusters} and \code{clusterPairs} accept multiple \code{Interaction
 <<>>=
 merged.data <- list(data, smaller.data)
 merged.results <- list(result$table, result.small$table)
-clustered.mult <- diClusters(merged.data, merged.results, 
+clustered.mult <- diClusters(merged.data, merged.results,
     target=0.05, cluster.args=list(tol=1))
-length(clustered.mult$anchor1)
+length(clustered.mult$interactions)
 @
 
 Alternatively, the \code{boxPairs} function can be used to identify all smaller bin pairs that are nested within each of the larger ``parent'' bin pairs.
@@ -1940,8 +1941,7 @@ Statistics for each of the larger bin pairs can then be stored to file.
 Reordering is performed using the combined $p$-value to promote the strongest changes.
 
 <<>>=
-results.b <- data.frame(anchor1=as.data.frame(boxed$anchor1)[,1:3],
-    anchor2=as.data.frame(boxed$anchor2)[,1:3], cons)
+results.b <- data.frame(as.data.frame(boxed$interactions)[,useful.cols], cons)
 o.b <- order(results.b$PValue)
 write.table(results.b[o.b,], file="boxed.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 @
@@ -1955,10 +1955,9 @@ However, keep in mind that the FDR is computed with respect to the features, not
 
 <<>>=
 inside <- getBestTest(boxed$indices$smaller, result.small$table)
-a1x.n <- anchors(smaller.data[inside$best,], type="first")
-a2x.n <- anchors(smaller.data[inside$best,], type="second")
-nested <- data.frame(anchor1=as.data.frame(a1x.n)[,2:3],
-    anchor2=as.data.frame(a2x.n)[,2:3], inside[, c("logFC", "F")])
+best.interactions <- interactions(smaller.data)[inside$best,]
+inter.frame <- as.data.frame(best.interactions)[,useful.cols[-c(1,4)]]
+nested <- data.frame(inter.frame, inside[,c("logFC", "F")])
 head(nested)
 expanded <- rep(NA, nrow(results.b)) # As some parents do not have nested elements.
 expanded[as.integer(rownames(inside))] <- seq_len(nrow(inside))
@@ -1994,8 +1993,8 @@ rect(start(chosen.a1), start(chosen.a2), end(chosen.a1), end(chosen.a2))
 
 <<eval=FALSE,echo=FALSE,label=setup>>=
 chosen <- o.b[1]
-chosen.a1 <- boxed$anchor1[chosen]
-chosen.a2 <- boxed$anchor2[chosen]
+chosen.a1 <- anchors(boxed$interactions[chosen], type="first")
+chosen.a2 <- anchors(boxed$interactions[chosen], type="second")
 expanded1 <- resize(chosen.a1, fix="center", width=bin.size*5)
 expanded2 <- resize(chosen.a2, fix="center", width=bin.size*5)
 cap.wt <- 100
@@ -2115,17 +2114,17 @@ rotPlaid(input[3], mm.param, region=example, width=2.5e4,
 
 <<eval=TRUE,echo=FALSE,label=rotset>>=
 chosen <- o.b[3]
-example <- boxed$anchor2[chosen]
-end(example) <- end(boxed$anchor1[chosen])
-best.mid.a1 <- (results.b$best.anchor1.start[chosen]+results.b$best.anchor1.end[chosen])/2
-best.mid.a2 <- (results.b$best.anchor2.start[chosen]+results.b$best.anchor2.end[chosen])/2
+example <- anchors(boxed$interactions[chosen], type="second")
+end(example) <- end(anchors(boxed$interactions[chosen], type="first"))
+best.mid.a1 <- (results.b$best.start1[chosen]+results.b$best.end1[chosen])/2
+best.mid.a2 <- (results.b$best.start2[chosen]+results.b$best.end2[chosen])/2
 best.mid <- (best.mid.a1 + best.mid.a2)/2
 best.gap <- best.mid.a1 - best.mid.a2
 @
 
 <<echo=FALSE,results=hide>>=
-.chosen.a1 <- boxed$anchor1[chosen]
-.chosen.a2 <- boxed$anchor2[chosen]
+.chosen.a1 <- anchors(boxed$interactions[chosen], type="first")
+.chosen.a2 <- anchors(boxed$interactions[chosen], type="second")
 if (as.character(seqnames(.chosen.a1))!="chr2" || start(.chosen.a1)!=136998216 || end(.chosen.a1)!=138001392 ||
     as.character(seqnames(.chosen.a2))!="chr2" || start(.chosen.a2)!=136001779 || end(.chosen.a2)!=136998219) {
 	warning("third plaid plot hits the wrong spot")
