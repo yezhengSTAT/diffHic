@@ -976,6 +976,8 @@ Users should try out the other general filters before proceeding to peak calling
 
 % I would just do direct filtering, and then consolidate across bin sizes.
 % It's less aggressive, I avoid having to cluster my output, and I still get decent resolution if the parents aren't too big.
+% Also, peak calling doesn't protect against the boost from an intersection of two well-mapped regions; e.g., 2x + 2x = 4x, whereas the background would only be 1-2x.
+% This can lead to spurious peaks that are simply due to mapping biases.
 
 \subsection{Efficient peak calling at high resolution}
 The \code{enrichedPairs} function requires that all bin pairs are loaded into memory, i.e., with \code{filter=1} during \code{squareCounts}.
