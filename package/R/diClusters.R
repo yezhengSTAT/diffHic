@@ -78,7 +78,11 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
         if (index.only) { 
             pos.clust <- pos.clust.all
             neg.clust <- neg.clust.all
-            additional <- max(sapply(pos.clust, function(x) { keep <- !is.na(x); if (!any(keep)) { return(0) } else { return(max(x[keep])) } }))
+            additional <- max(sapply(pos.clust, function(x) { 
+                keep <- !is.na(x)
+                if (!any(keep)) { return(0) } 
+                return(max(x[keep])) 
+            }))
         } else {
             pos.clust <- pos.clust.all$indices
             neg.clust <- neg.clust.all$indices
@@ -99,8 +103,9 @@ diClusters <- function(data.list, result.list, target, equiweight=TRUE, cluster.
         if (index.only) { return(clust.indices) }
         list(indices=clust.indices, interactions=c(pos.clust.all$interactions, neg.clust.all$interactions))
     }
-    out <- controlClusterFDR(target=target, adjp=adjp, FUN=function(sig) { unlist(FUN(sig)) },
-                             weight=weights, grid.param=grid.param)
+    out <- controlClusterFDR(target=target, adjp=adjp, FUN=function(sig) { 
+        unlist(FUN(sig)) 
+    }, weight=weights, grid.param=grid.param)
     sig <- adjp <= out$threshold
     clusters <- FUN(sig, index.only=FALSE)
 

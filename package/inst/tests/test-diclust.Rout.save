@@ -1,6 +1,6 @@
 
-R Under development (unstable) (2015-12-22 r69809) -- "Unsuffered Consequences"
-Copyright (C) 2015 The R Foundation for Statistical Computing
+R Under development (unstable) (2016-02-24 r70217) -- "Unsuffered Consequences"
+Copyright (C) 2016 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -34,8 +34,8 @@ Type 'q()' to quit R.
 +         ref <- data.list[was.sig,]
 +     }
 +     bbox <- boundingBox(ref, all.ids[was.sig])
-+     stopifnot(all(bbox$first==anchors(out$interactions, type="first")))
-+     stopifnot(all(bbox$second==anchors(out$interactions, type="second")))
++     stopifnot(all(anchors(bbox, type="first")==anchors(out$interactions, type="first")))
++     stopifnot(all(anchors(bbox, type="second")==anchors(out$interactions, type="second")))
 + 
 +     # Checking that the right interactions were chosen.
 +     if (is.data.frame(result.list)) { 
@@ -116,4 +116,4 @@ Type 'q()' to quit R.
 > 
 > proc.time()
    user  system elapsed 
- 19.648   0.189  19.839 
+ 19.063   0.240  19.304 
