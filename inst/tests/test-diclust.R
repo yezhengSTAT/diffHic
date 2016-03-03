@@ -15,8 +15,8 @@ checkResults <- function(data.list, result.list, pval.col="PValue", tol, ..., tr
         ref <- data.list[was.sig,]
     }
     bbox <- boundingBox(ref, all.ids[was.sig])
-    stopifnot(all(bbox$first==anchors(out$interactions, type="first")))
-    stopifnot(all(bbox$second==anchors(out$interactions, type="second")))
+    stopifnot(all(anchors(bbox, type="first")==anchors(out$interactions, type="first")))
+    stopifnot(all(anchors(bbox, type="second")==anchors(out$interactions, type="second")))
 
     # Checking that the right interactions were chosen.
     if (is.data.frame(result.list)) { 
