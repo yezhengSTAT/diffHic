@@ -52,6 +52,8 @@ The fit parameters can be changed by varying \code{span}, \code{maxk} and additi
 Higher values of \code{span} will increase smoothness, at the cost of sensitivity.
 Increases in \code{maxk} may be required to obtain a more accurate approximation when fitting large datasets.
 In all cases, a loess fit of degree 1 is used.
+
+For use by downstream functions, the offset matrix can be stored as an assay named \code{"offset"} in the \code{data} object.
 }
 
 \value{
@@ -81,8 +83,9 @@ npairs <- 5000
 nlibs <- 4
 anchor1 <- sample(npts, npairs, replace=TRUE)
 anchor2 <- sample(npts, npairs, replace=TRUE)
+
 data <- InteractionSet(
-    matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs),
+    list(counts=matrix(rpois(npairs*nlibs, runif(npairs, 10, 100)), nrow=npairs)),
     GInteractions(anchor1=anchor1, anchor2=anchor2, 
         regions=GRanges("chrA", IRanges(1:npts, 1:npts)), mode="reverse"),
 	colData=DataFrame(totals=runif(nlibs, 1e6, 2e6))) 
@@ -91,9 +94,14 @@ margins <- SummarizedExperiment(matrix(rpois(npts*nlibs, 100), nrow=npts),
 	colData=DataFrame(totals=data$totals), rowRanges=regions(data))
 
 # Running normalizeCNV.
-head(normalizeCNV(data, margins))
+out <- normalizeCNV(data, margins)
+head(out)
 head(normalizeCNV(data, margins, prior.count=1))
 head(normalizeCNV(data, margins, span=0.5))
+
+# Store offsets as the 'offset' assay for use by, e.g., asDGEList.
+assays(data)$offset <- out
+data
 
 # Occasionally locfit will complain; increase maxk to compensate.
 data <- InteractionSet(matrix(rpois(npairs*nlibs, 20), nrow=npairs),
