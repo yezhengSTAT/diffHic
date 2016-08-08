@@ -258,12 +258,6 @@ public:
         std::stringstream converter;
         converter << p << c1 << "_" << c2;
         path=converter.str();
-        if (FILE *file = std::fopen(path.c_str(), "r")) {
-            std::stringstream err;
-            err << "file '" << path << "' already exists"; 
-            throw std::runtime_error(err.str());
-        }
-        return;
     }
 
     void add(int anchor, int target, int apos, int tpos, int alen, int tlen, bool arev, bool trev) {
@@ -283,7 +277,7 @@ public:
 
     void dump() {
         if (!num) { return; }
-        FILE * out=std::fopen(path.c_str(), "a");
+        FILE * out=std::fopen(path.c_str(), (saved ? "a" : "w"));  // Appending to file, if stuff has already been saved.
         if (out==NULL) {
             std::stringstream err;
             err << "failed to open output file at '" << path << "'"; 
