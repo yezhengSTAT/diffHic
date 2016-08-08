@@ -143,7 +143,7 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
         if (extras[1]==-1L) {
             outfrags <- outfrags[-1]
         } else {
-            outfrags <- c(outfrags, list(GRanges(extras, IRanges(1, sizes[1]))))
+            outfrags <- c(list(GRanges(extras, IRanges(1, 100))), outfrags)
         }
     }
 	suppressWarnings(outfrags<-do.call(c, outfrags))
@@ -303,6 +303,9 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 
 	# Anchor1/anchor2 synchronisation is determined by order in 'fragments' (and thusly, in max.cuts).
 	offset<-c(0L, cumsum(max.cuts))
+    if (!is.null(extras)) { 
+        offset <- offset + length(extras) # adding values to match up with 'outfrags'.
+    }
 	names(offset)<-NULL
 	indices<-diffHic:::.loadIndices(tmpdir, seqlevels(outfrags))
 	used<-indices
@@ -310,6 +313,7 @@ comp<-function (fname, npairs, max.cuts, sizes=c(100, 500), singles=0, rlen=10, 
 
 	for (i in 1:length(max.cuts)) {
 		for (j in 1:i) {
+            # Getting the fragment IDs for the remaining pairs for this chromosome.
 			stuff<-(chrs[primary]==i & chrs[secondary]==j) | (chrs[primary]==j & chrs[secondary]==i) 
 			if (!pseudo) { stuff<-stuff & (codes==0L | codes==2L) }
 			pids<-frag.ids[primary][stuff];
@@ -478,11 +482,15 @@ max.cuts<-c(chrA=20L, chrB=10L)
 comp(fname, npairs=20, max.cuts=max.cuts, spacer=0, sizes=c(100, 100), extras="chrX") # should work
 comp(fname, npairs=20, max.cuts=max.cuts, spacer=0, sizes=c(100, 100), extras="chrX", pseudo=TRUE)
 try({
-    comp(fname, npairs=20, max.cuts=max.cuts, spacer=0, sizes=c(100, 100), extras=-1L) # should be okay
+    comp(fname, npairs=20, max.cuts=max.cuts, spacer=0, sizes=c(100, 100), extras=-1L) 
 })
 try({
     comp(fname, npairs=20, max.cuts=max.cuts, spacer=0, sizes=c(100, 100), extras=-1L, pseudo=TRUE)
 })
+
+# Throwing more than 5000 read pairs in, to check that it still behaves past the 5000 read pair threshold for file dumping. 
+max.cuts<-c(chrA=20L, chrB=10L)
+comp(fname, npairs=10000, max.cuts=max.cuts, sizes=c(50, 100))
 
 ###################################################################################################
 # Trying to do simulations with chimeras is hellishly complicated, so we're just going to settle for 

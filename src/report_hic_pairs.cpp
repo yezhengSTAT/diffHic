@@ -277,7 +277,7 @@ public:
 
     void dump() {
         if (!num) { return; }
-        FILE * out=std::fopen(path.c_str(), (saved ? "a" : "w"));  // Appending to file, if stuff has already been saved.
+        FILE * out=std::fopen(path.c_str(), "a");  // Assuming file isn't already present (should be absent in a new directory).
         if (out==NULL) {
             std::stringstream err;
             err << "failed to open output file at '" << path << "'"; 
