@@ -251,35 +251,58 @@ public:
     bool holding;
 };
 
+
 class OutputFile {
 public: 
-    OutputFile(const char* p, const int c1, const int c2) : out(NULL) { 
+    OutputFile(const char* p, const int c1, const int c2) : num(0), ai(NPAIRS), ti(NPAIRS), ap(NPAIRS), tp(NPAIRS), al(NPAIRS), tl(NPAIRS), saved(false) {
         std::stringstream converter;
         converter << p << c1 << "_" << c2;
         path=converter.str();
+        if (FILE *file = std::fopen(path.c_str(), "r")) {
+            std::stringstream err;
+            err << "file '" << path << "' already exists"; 
+            throw std::runtime_error(err.str());
+        }
         return;
     }
+
     void add(int anchor, int target, int apos, int tpos, int alen, int tlen, bool arev, bool trev) {
-        if (out==NULL) { 
-            out = std::fopen(path.c_str(), "w");
-            if (out==NULL) {
-                std::stringstream err;
-                err << "failed to open output file at '" << path << "'"; 
-                throw std::runtime_error(err.str());
-            }
-        }
+        if (num==NPAIRS) { dump(); }
 		if (alen<0 || tlen<0) { throw std::runtime_error("alignment lengths should be positive"); }
         if (arev) { alen *= -1; } 
         if (trev) { tlen *= -1; } 
-        fprintf(out, "%i\t%i\t%i\t%i\t%i\t%i\n", anchor+1, target+1, apos, tpos, alen, tlen); // Get back to 1-indexing.
+        ai[num]=anchor+1; // Get back to 1-indexing.
+        ti[num]=target+1; 
+        ap[num]=apos;
+        tp[num]=tpos;
+        al[num]=alen;
+        tl[num]=tlen;
+        ++num;
         return;
     }
-    ~OutputFile() {
-        if (out!=NULL) { std::fclose(out); }
+
+    void dump() {
+        if (!num) { return; }
+        FILE * out=std::fopen(path.c_str(), "a");
+        if (out==NULL) {
+            std::stringstream err;
+            err << "failed to open output file at '" << path << "'"; 
+            throw std::runtime_error(err.str());
+        }
+        for (size_t i=0; i<num; ++i) {
+            fprintf(out, "%i\t%i\t%i\t%i\t%i\t%i\n", ai[i], ti[i], ap[i], tp[i], al[i], tl[i]);
+        }
+        std::fclose(out);
+        num=0;
+        saved=true;
+        return;
     }
     
-    FILE * out;
+    static const size_t NPAIRS=5000;
+    size_t num;
+    std::deque<int> ai, ti, ap, tp, al, tl;
     std::string path;
+    bool saved;
 };
 
 /************************
@@ -473,6 +496,13 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
                 anchor_seg.reverse, target_seg.reverse);
 	}
 
+    // Dumping any leftovers that are still present.
+    for (size_t i=0; i<nc; ++i) { 
+        for (size_t j=0; j<=i; ++j) { 
+            collected[i][j].dump();
+        }
+    }
+
 	SEXP total_output=PROTECT(allocVector(VECSXP, 5));
 	try {
         // Saving all file names.
@@ -482,7 +512,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
             SET_VECTOR_ELT(all_paths, i, allocVector(STRSXP, i+1));
             SEXP current_paths=VECTOR_ELT(all_paths, i);
             for (size_t j=0; j<=i; ++j) {
-                if (collected[i][j].out!=NULL) {
+                if (collected[i][j].saved) {
                     SET_STRING_ELT(current_paths, j, mkChar(collected[i][j].path.c_str()));
                 } else {
                     SET_STRING_ELT(current_paths, j, mkChar(""));

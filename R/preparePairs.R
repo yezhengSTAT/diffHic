@@ -52,10 +52,9 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
     } else {
         output.dir <- path.expand(output.dir)
     }
-    if (file.exists(output.dir)) { 
-        stop("output directory already exists")
+    if (!dir.create(output.dir)) {
+        stop("failed to create output directory")
     }
-    dir.create(output.dir)
     on.exit({ unlink(output.dir, recursive=TRUE) })
     prefix <- file.path(output.dir, "")
 
