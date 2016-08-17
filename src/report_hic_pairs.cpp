@@ -254,7 +254,8 @@ public:
 
 class OutputFile {
 public: 
-    OutputFile(const char* p, const int c1, const int c2) : num(0), ai(NPAIRS), ti(NPAIRS), ap(NPAIRS), tp(NPAIRS), al(NPAIRS), tl(NPAIRS), saved(false) {
+    OutputFile(const char* p, const int c1, const int c2, const size_t np) : num(0), NPAIRS(np), 
+            ai(NPAIRS), ti(NPAIRS), ap(NPAIRS), tp(NPAIRS), al(NPAIRS), tl(NPAIRS), saved(false) {
         std::stringstream converter;
         converter << p << c1 << "_" << c2;
         path=converter.str();
@@ -292,8 +293,8 @@ public:
         return;
     }
     
-    static const size_t NPAIRS=5000;
     size_t num;
+    const size_t NPAIRS;
     std::deque<int> ai, ti, ap, tp, al, tl;
     std::string path;
     bool saved;
@@ -304,7 +305,7 @@ public:
  ************************/
 
 SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)(const segment&, const segment&), const check_invalid_chimera * const icptr,
-        SEXP chr_converter, SEXP bamfile, SEXP prefix, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
+        SEXP chr_converter, SEXP bamfile, SEXP prefix, SEXP storage, SEXP chimera_strict, SEXP minqual, SEXP do_dedup) {
 
     // Checking input values.
     if (!isString(bamfile) || LENGTH(bamfile)!=1) { throw std::runtime_error("BAM file path should be a character string"); }
@@ -312,6 +313,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
     if (!isLogical(chimera_strict) || LENGTH(chimera_strict)!=1) { throw std::runtime_error("chimera removal specification should be a logical scalar"); }
 	if (!isLogical(do_dedup) || LENGTH(do_dedup)!=1) { throw std::runtime_error("duplicate removal specification should be a logical scalar"); }
 	if (!isInteger(minqual) || LENGTH(minqual)!=1) { throw std::runtime_error("minimum mapping quality should be an integer scalar"); }
+	if (!isInteger(storage) || LENGTH(storage)!=1) { throw std::runtime_error("number of stored pairs should be an integer scalar"); }
 
 	// Initializing pointers.
     Bamfile input(CHAR(STRING_ELT(bamfile, 0)));
@@ -319,6 +321,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	const bool rm_dup=asLogical(do_dedup);
 	const int minq=asInteger(minqual);
 	const bool rm_min=!ISNA(minq);
+    const size_t stored_pairs=asInteger(storage);
 
     // Initializing the chromosome conversion table (to get from BAM TIDs to chromosome indices in the 'fragments' GRanges).
 	const size_t nc=ffptr->nchrs();
@@ -335,7 +338,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	std::deque<std::deque<OutputFile> > collected(nc);
 	for (size_t i=0; i<nc; ++i) { 
         for (size_t j=0; j<=i; ++j) { 
-            collected[i].push_back(OutputFile(oprefix, i, j));
+            collected[i].push_back(OutputFile(oprefix, i, j, stored_pairs));
         }
     }
 	int single=-1; // First one always reported as a singleton, as qname is empty.
@@ -546,7 +549,7 @@ SEXP internal_loop (const base_finder * const ffptr, status (*check_self_status)
 	return total_output;
 }
 
-SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP chrconvert, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP chrconvert, SEXP bamfile, SEXP outfile, SEXP storage, 
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
 	fragment_finder ff(start_list, end_list);
 	
@@ -556,7 +559,7 @@ SEXP report_hic_pairs (SEXP start_list, SEXP end_list, SEXP chrconvert, SEXP bam
 	if (invdist.get_span()==NA_INTEGER) { invchim=&invfrag; } 
 	else { invchim=&invdist; }
 	
-	return internal_loop(&ff, &get_status, invchim, chrconvert, bamfile, outfile, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &get_status, invchim, chrconvert, bamfile, outfile, storage, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
@@ -605,11 +608,11 @@ status no_status_check (const segment& left, const segment& right) {
 	return NEITHER;
 }
 
-SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP chrconvert, SEXP bamfile, SEXP outfile, 
+SEXP report_hic_binned_pairs (SEXP num_in_chrs, SEXP bwidth, SEXP chrconvert, SEXP bamfile, SEXP outfile, SEXP storage,
         SEXP chimera_strict, SEXP chimera_span, SEXP minqual, SEXP do_dedup) try {
 	simple_finder ff(num_in_chrs, bwidth);
 	check_invalid_by_dist invchim(chimera_span);
-	return internal_loop(&ff, &no_status_check, &invchim, chrconvert, bamfile, outfile, chimera_strict, minqual, do_dedup);
+	return internal_loop(&ff, &no_status_check, &invchim, chrconvert, bamfile, outfile, storage, chimera_strict, minqual, do_dedup);
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
