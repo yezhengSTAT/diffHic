@@ -1,4 +1,4 @@
-prepPseudoPairs <- function(bam, param, file, dedup=TRUE, ichim=TRUE, chim.span=1000, minq=NA, output.dir=NULL, storage=5000L)
+prepPseudoPairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim.span=1000, output.dir=NULL, storage=5000L)
 # This function acts the same as preparePairs, but it assumes that you're
 # putting things into contiguous bins across the genome. The idea is to
 # allow DNase-digested Hi-C experiments to fit in the pipeline, where reads

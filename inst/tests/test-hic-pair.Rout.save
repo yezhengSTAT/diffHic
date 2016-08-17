@@ -26,8 +26,6 @@ Type 'q()' to quit R.
 > 
 > dir<-"hic-test"
 > dir.create(dir)
-Warning message:
-In dir.create(dir) : 'hic-test' already exists
 > 
 > # Checking CIGAR.
 > 
