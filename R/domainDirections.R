@@ -26,15 +26,11 @@ domainDirections <- function(files, param, width=50000, span=10)
 	discard <- .splitDiscards(param$discard)
 	cap <- param$cap
 	
-	# Getting the full library sizes and computing offsets.
-	full.sizes <- totalCounts(files, param)
-	offsets <- log(full.sizes) - log(mean(full.sizes))
-	maxit <- as.integer(formals(mglmOneGroup)$maxit)
-	tol <- formals(mglmOneGroup)$tol
-	disp <- 0.05
-	
 	# Running through each pair of chromosomes.
-	upcount <- downcount <- numeric(length(new.pts$region))
+    nlibs <- length(files)
+	upcount <- downcount <- matrix(0, length(new.pts$region), nlibs)
+    full.sizes <- integer(nlibs)
+
 	overall <- .loadIndices(files, chrs, restrict)
 	for (chr in names(overall)) {
 		current <- overall[[chr]]
@@ -45,18 +41,20 @@ domainDirections <- function(files, param, width=50000, span=10)
 		first.index <- bin.by.chr$first[[chr]]
 		last.index <- bin.by.chr$last[[chr]]
 	
-		out <- .Call(cxx_directionality, pairs, new.pts$id, span, 
-			first.index, last.index, maxit, tol, offsets, disp)
+		out <- .Call(cxx_directionality, pairs, new.pts$id, span, first.index, last.index)
 		if (is.character(out)) { stop(out) }
 		if (!length(out[[1]])) { next }
 
-		upcount[first.index:last.index] <- out[[2]]
-		downcount[first.index:last.index] <- out[[1]]
+        pnts <- first.index:last.index
+		downcount[pnts,] <- out[[1]]
+		upcount[pnts,] <- out[[2]]
+
+        full.sizes <- full.sizes + sapply(pairs, nrow)
 	}
 
-	# Computing the significance of deviations.
-	new.pts$region$Up <- upcount
-	new.pts$region$Down <- downcount
-	return(new.pts$region)
+    # Return an RSE with up and down counts.
+    return(SummarizedExperiment(SimpleList(up=upcount, down=downcount), 
+        new.pts$region, colData=DataFrame(totals=full.sizes),
+        metadata=list(param=param, span=span, width=width)))                                      
 }
 
