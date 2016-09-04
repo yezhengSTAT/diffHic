@@ -17,7 +17,7 @@ domainDirections(files, param, width=50000, span=10)
 
 \details{
 The genome is partitioned into bins of size \code{width}.
-For each bin, this function computes the total number of read pairs between that bin and the \code{span} upstream bins.
+For each bin, this function computes the total number of read pairs between that bin and the \code{span} upstream bins (i.e., those with higher genomic coordinates).
 This is repeated for the \code{span} downstream bins, thus yielding two counts (up and down) per bin.
 
 A RangedSummarizedExperiment is returned containing the coordinates of each bin and two matrices of counts, named \code{"up"} and \code{"down"}.
@@ -31,7 +31,6 @@ Alternatively, it can be used to identify differential domains - see the user's 
 \value{
 A RangedSummarizedExperiment object with one row for each bin in the genome.
 It contains two integer matrices named \code{"up"} and \code{"down"}, containing the counts to upstream and downstream bins respectively.
-It also contains the total number of read pairs in each library in the \code{totals} of the column metadata.
 }
 
 \seealso{

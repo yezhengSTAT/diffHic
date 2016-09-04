@@ -28,8 +28,7 @@ domainDirections <- function(files, param, width=50000, span=10)
 	
 	# Running through each pair of chromosomes.
     nlibs <- length(files)
-	upcount <- downcount <- matrix(0, length(new.pts$region), nlibs)
-    full.sizes <- integer(nlibs)
+	upcount <- downcount <- matrix(0L, length(new.pts$region), nlibs)
 
 	overall <- .loadIndices(files, chrs, restrict)
 	for (chr in names(overall)) {
@@ -48,13 +47,11 @@ domainDirections <- function(files, param, width=50000, span=10)
         pnts <- first.index:last.index
 		downcount[pnts,] <- out[[1]]
 		upcount[pnts,] <- out[[2]]
-
-        full.sizes <- full.sizes + sapply(pairs, nrow)
 	}
 
     # Return an RSE with up and down counts.
+    # No total counts, because we don't load every chromosome pair - might as well call totalCounts() externally if required.
     return(SummarizedExperiment(SimpleList(up=upcount, down=downcount), 
-        new.pts$region, colData=DataFrame(totals=full.sizes),
-        metadata=list(param=param, span=span, width=width)))                                      
+        new.pts$region, metadata=list(param=param, span=span, width=width)))                                      
 }
 
