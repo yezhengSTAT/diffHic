@@ -107,7 +107,7 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	out.right <- out.left <- list(integer(0))
 	idex<-1L
 
-	chrs <- seqlevels(fragments)
+	chrs <- seqlevelsInUse(fragments)
 	my.chrs <- unique(runValue(seqnames(regions)))
 	overall <- .loadIndices(files, chrs, restrict)
 
