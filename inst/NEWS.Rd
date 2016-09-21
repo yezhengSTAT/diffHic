@@ -2,8 +2,10 @@
 \title{diffHic News}
 \encoding{UTF-8}
 
-\section{Version 1.5.5}{\itemize{
+\section{Version 1.5.6}{\itemize{
 \item Relaxed checks in preparePairs(), prepPseudoPairs() when more chromosomes are supplied than needed.
+
+\item Relaxed checks in connectCounts() when extra chromosomes are in the input ranges.
 
 \item Fixed an issue with preparePairs() when too many file handles are open.
 
