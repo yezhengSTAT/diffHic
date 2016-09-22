@@ -14,6 +14,10 @@
 \item Modified domainDirections() to return a RangedSummarizedExperiment.
 
 \item Removed defunct DIList class and methods.
+
+\item Switched from seqlevels() to seqlevelsInUse() for fragment intervals.
+
+\item Updated user's guide, documentation.
 }
 }
 
