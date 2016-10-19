@@ -1,5 +1,5 @@
 
-R Under development (unstable) (2016-02-24 r70217) -- "Unsuffered Consequences"
+R version 3.3.1 Patched (2016-10-17 r71532) -- "Bug in Your Hair"
 Copyright (C) 2016 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
@@ -119,10 +119,13 @@ $max
 [39] 0 0 0 0 0 0 0 0 0 0 0 0
 
 > 
-> ghost.ranges <- SummarizedExperiment(matrix(0, 0, 0), GRanges())
+> ghost.ranges <- SummarizedExperiment(matrix(0, 0, 1), GRanges())
 > try(normalizeCNV(ghost, ghost.ranges)) # locfit isn't as robust as loessFit
-Error in if (mean.lib.size == 0) { : 
-  missing value where TRUE/FALSE needed
+Error in locfit(i.fc ~ cov.fun, maxk = maxk, ..., lfproc = locfit.robust) : 
+  fewer than one row in the data
+In addition: Warning message:
+In normalizeCNV(ghost, ghost.ranges) :
+  library sizes should be identical for margin and data objects
 > 
 > matchMargins(ghost, ghost.ranges)
 [1] anchor1 anchor2
@@ -172,4 +175,4 @@ character(0)
 > 
 > proc.time()
    user  system elapsed 
-  8.064   0.192   8.344 
+  7.588   0.140   7.740 
