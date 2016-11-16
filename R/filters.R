@@ -68,9 +68,14 @@ filterDirect <- function(data, prior.count=2, reference=NULL)
 }
 
 .makeEmpty <- function(data, ...) { 
-    empty <- data[1,]
-    assay(empty)[] <- 0L
-    scaledAverage(asDGEList(empty), ...) 
+    if (nrow(data)) { 
+        y <- asDGEList(data[1,])
+        y$counts[] <- 0L
+    } else {
+        y <- asDGEList(data)
+        y$counts <- rbind(integer(ncol(data)))
+    }
+    scaledAverage(y, ...) 
 }
 
 filterTrended <- function(data, span=0.25, prior.count=2, reference=NULL)

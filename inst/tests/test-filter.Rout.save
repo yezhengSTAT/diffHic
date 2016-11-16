@@ -67,6 +67,7 @@ Welcome to Bioconductor
     'browseVignettes()'. To cite Bioconductor, see
     'citation("Biobase")', and for packages 'citation("pkgname")'.
 
+> set.seed(1212)
 > 
 > ends <- c(1:10, 1:5)*10L
 > starts <- ends - 9L
@@ -197,7 +198,7 @@ In .getInterThreshold(all.chrs, ave.ab[is.inter], empty = empty.ab) :
 > out <- filterTrended(x)
 > stopifnot(all.equal(out$log.distance, log10(pairdist(x)+median(width(my.regions)))))
 > head(out$log.distance)
-[1] 1.301030       NA 1.000000       NA 1.477121 1.698970
+[1] 1.477121 1.778151       NA 1.698970 1.301030       NA
 > stopifnot(all(out$abundances==edgeR::aveLogCPM(100, 1e6)))
 > head(out$abundances)
 [1] 6.67242 6.67242 6.67242 6.67242 6.67242 6.67242
@@ -222,7 +223,7 @@ In .getInterThreshold(all.chrs, ave.ab[is.inter], empty = empty.ab) :
 > ref.dist <- ref.dist[as.matrix(is.na(as.matrix(cm))) & !is.na(ref.dist) & lower.tri(ref.dist, diag=TRUE)]
 > stopifnot(all.equal(sort(extra.dist), sort(ref.dist)))
 > head(extra.dist)
-[1]  0  0  0  0 30 20
+[1]  0  0  0 10  0 20
 > 
 > # Checking that we fit a sensible trend.
 > 
@@ -235,7 +236,7 @@ In .getInterThreshold(all.chrs, ave.ab[is.inter], empty = empty.ab) :
 > ref.threshold[is.na(ref.threshold)] <- dout$threshold
 > stopifnot(all.equal(ref.threshold, out$threshold))
 > head(out$threshold)
-[1] 5.592622 6.672420 2.230826 6.672420 6.134988 5.100165
+[1] 4.473167 5.911542 6.672420 6.100728 5.911542 6.672420
 > 
 > # Checking that behaviour upon setting 'ref' is reasonable.
 > 
@@ -252,7 +253,7 @@ In .getInterThreshold(all.chrs, ave.ab[is.inter], empty = empty.ab) :
 > new.threshold[is.na(outr$log.distance)] <- doutr$threshold
 > stopifnot(all.equal(new.threshold, outr$threshold))
 > head(outr$threshold)
-[1] 1.561314 3.584957 1.561314 3.584957 3.092457 3.387867
+[1] 3.238219 3.324433 3.584957 2.929277 1.457190 3.584957
 > 
 > #################################################################
 > # End.
@@ -260,4 +261,4 @@ In .getInterThreshold(all.chrs, ave.ab[is.inter], empty = empty.ab) :
 > 
 > proc.time()
    user  system elapsed 
-  6.772   0.164   6.947 
+  7.556   0.128   7.705 
