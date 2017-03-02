@@ -35,9 +35,9 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
    	npairs <- min(npairs, nrow(all.pairs))
 
 	# Setting up some data.
-	counts <- do.call(cbind, lapply(1:nlibs, FUN=function(x) { as.integer(rpois(npairs, lambda) + 1) }) )
+	counts <- do.call(cbind, lapply(seq_len(nlibs), FUN=function(x) { as.integer(rpois(npairs, lambda) + 1) }) )
 	chosen <- sample(nrow(all.pairs), npairs)
-	indices <- unlist(sapply(chromos, FUN=function(x) { 1:x }), use.names=FALSE)
+	indices <- unlist(sapply(chromos, FUN=function(x) { seq_len(x) }), use.names=FALSE)
 	data <- InteractionSet(list(counts=counts), 
         GInteractions(anchor1=aid[chosen], anchor2=tid[chosen],
             regions=GRanges(rep(names(chromos), chromos), IRanges(indices, indices)), mode="reverse"),
@@ -51,15 +51,14 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 	# Sorting them by chromosome pairs.
 	all.chrs <- as.character(seqnames(regions(data)))
 	chr.pair <- paste0(all.chrs[anchors(data, type="first", id=TRUE)], ".", all.chrs[anchors(data, type="second", id=TRUE)])
-	by.chr.pair <- split(1:npairs, chr.pair)
-	first.id <- lapply(split(1:nbins, all.chrs), FUN=min)
+	by.chr.pair <- split(seq_len(npairs), chr.pair)
+	first.id <- lapply(split(seq_len(nbins), all.chrs), FUN=min)
 
 	for (cpair in names(by.chr.pair)) { 
 		cur.pairs <- by.chr.pair[[cpair]]
 		two.chrs <- strsplit(cpair, "\\.")[[1]]
 		current <- data[cur.pairs,]
-		rel.ab <- 2^(aveLogCPM(assay(current), lib.size=current$totals, prior.count=0) 
-			+ log2(mean(current$totals)/1e6))
+        counts <- assay(current)
 
 		# Setting up the interaction space.
 		a.dex <- anchors(current, type="first", id=TRUE) - first.id[[two.chrs[1]]] + 1L
@@ -77,12 +76,11 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 		} else {
 			starting.dex <- 2L
 		}
+    	total.num <- 4L
+        output <- lapply(seq_len(total.num), FUN=function(x) matrix(0L, nrow(current), nlibs))
+        output.n <- lapply(seq_len(total.num), FUN=function(x) integer(nrow(current)))
 
-		output <- numeric(nrow(current))
-		for (pair in 1:nrow(current)) {
-			total.num <- 4L
-			collected <- numeric(total.num)
-			collected.n <- numeric(total.num)
+		for (pair in seq_len(nrow(current))) {
 			ax <- a.dex[pair]
 			tx <- t.dex[pair]
 
@@ -117,24 +115,35 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 
 				# Computing the average across this quadrant.
 				relevant.rows <- inter.space[indices]
-				is.zero <- relevant.rows==0L			
-				collected[quad] <- sum(rel.ab[relevant.rows[!is.zero]])/length(relevant.rows)
-				collected.n[quad] <- length(relevant.rows)
+				is.zero <- relevant.rows==0L
+                for (lib in seq_len(nlibs)) { 
+                    output[[quad]][pair,lib] <- sum(counts[relevant.rows[!is.zero],lib])
+                }
+                output.n[[quad]][pair] <- length(relevant.rows)
 			}
 
 #			if (exclude) { # Troubleshooting.
 #				print(c(aid[pair], tid[pair]))
 #				print(collected)
 #				print(collected.n)
-#			}
-		
-			output[pair] <- log2((rel.ab[pair]+prior)/(max(collected, na.rm=TRUE)+prior))
+#			}	
 		}
-		final.ref[cur.pairs] <- output
-	}
-
-	if (any(abs(bg-final.ref) > (0.001+abs(bg))*1e-6)) { stop("mismatch in relative enrichment values") }
-	return(head(bg))
+        
+        for (quad in starting.dex:total.num) {
+            mat <- assay(bg, diffHic:::.neighbor_locales()[quad])
+            chosen.mat <- mat[cur.pairs,]
+            dimnames(chosen.mat) <- NULL
+            if (!identical(chosen.mat, output[[quad]])) { 
+                stop("counts don't match up for one neighbourhood")
+            }
+            mat.n <- rowData(bg)[[paste0("N.", diffHic:::.neighbor_locales()[quad])]]
+            chosen.mat.n <- as.integer(mat.n[cur.pairs])
+            if (!identical(chosen.mat.n, output.n[[quad]])) { 
+                stop("neighbourhood sizes don't match up")
+            }
+        }
+    }
+	return(head(assay(bg, diffHic:::.neighbor_locales()[1])))
 }
 
 ###################################################################################################
