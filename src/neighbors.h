@@ -56,8 +56,10 @@ struct leftright : public basic {
 	bool bump_level();
 	void set(int, int);
 protected:
-    bool bumped;
+    bool onleft;
 };
+
+enum Rangetype { FULLRANGE, LEFTSIDE, RIGHTSIDE };
 
 struct allaround : public basic {
 	allaround(int, int, bool, int);
@@ -65,7 +67,7 @@ struct allaround : public basic {
 	bool bump_level();
 	void set(int, int);
 protected:
-    bool bumped;
+    Rangetype rangemode;
 };
 
 #endif

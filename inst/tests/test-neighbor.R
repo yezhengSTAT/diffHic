@@ -2,7 +2,6 @@
 # This tests the neighbor-counting code.
 
 suppressWarnings(suppressPackageStartupMessages(require(diffHic)))
-suppressPackageStartupMessages(require(edgeR))
 
 # Defining some odds and ends.
 
@@ -22,7 +21,7 @@ all.but.middle <- function(x, exclude=0) {
 	out
 }
 
-comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
+comp <- function(npairs, chromos, flanking, exclude=0) {
 	flanking <- as.integer(flanking)
 	exclude <- as.integer(exclude)
 
@@ -45,7 +44,7 @@ comp <- function(npairs, chromos, flanking, exclude=0, prior=2) {
 	regions(data)$nfrags <- rep(1:3, length.out=nbins)
 	
 	# Computing the reference enrichment value.
-	bg <- enrichedPairs(data, flank=flanking, prior.count=prior, exclude=exclude)
+	bg <- enrichedPairs(data, flank=flanking, exclude=exclude)
 	final.ref <- numeric(length(bg))
 
 	# Sorting them by chromosome pairs.
@@ -186,48 +185,46 @@ dir.create("temp-neighbor")
 dir1<-"temp-neighbor/1.h5"
 dir2<-"temp-neighbor/2.h5"
 
-comp2 <- function(npairs1, npairs2, width, cuts, filter=1, flank=5, exclude=0, prior.count=2) {
+comp2 <- function(npairs1, npairs2, width, cuts, filter=1, flank=5, exclude=0) {
 	simgen(dir1, npairs1, chromos)
 	simgen(dir2, npairs2, chromos)
 	param <- pairParam(fragments=cuts)
 
-	out <- neighborCounts(c(dir1, dir2), param, width=width, filter=filter, flank=flank, prior.count=prior.count, 
-		exclude=exclude)
+	out <- neighborCounts(c(dir1, dir2), param, width=width, filter=filter, flank=flank, exclude=exclude)
 
 	ref <- squareCounts(c(dir1, dir2), width=width, param, filter=1)
 	keep <- rowSums(assay(ref)) >= filter
-	enrichment <- enrichedPairs(ref, flank=flank, prior.count=prior.count, exclude=exclude)
+	subref <- enrichedPairs(ref, flank=flank, exclude=exclude)[keep,]
 
-    subref <- ref[keep,]
 	if (!identical(regions(subref), regions(out))) { stop("extracted regions don't match up") }
-	if (!identical(anchors(subref), anchors(out))) { stop("extracted anchors don't match up") }
+	if (!identical(anchors(subref, id=TRUE), anchors(out, id=TRUE))) { stop("extracted anchors don't match up") }
 	if (!identical(assays(subref), assays(out))) { stop("extracted counts don't match up") }
 	if (!identical(colData(subref), colData(out))) { stop("extracted colData doesn't match up") }
 	if (!identical(metadata(subref), metadata(out))) { stop("extracted metadata doesn't match up") }
-	if (any(abs(enrichment[keep] - mcols(out)$enrichment) > 1e-6)) { stop("enrichment values don't match up") }
-	return(head(enrichment[keep]))
+
+    return(head(assay(out, diffHic:::.neighbor_locales()[1])))
 }
 
 set.seed(2384)
 comp2(100, 50, 10000, cuts=simcuts(chromos))
 comp2(100, 50, 10000, cuts=simcuts(chromos), filter=10)
 comp2(100, 50, 10000, cuts=simcuts(chromos), flank=3)
-comp2(100, 50, 10000, cuts=simcuts(chromos), prior.count=1)
+comp2(100, 50, 10000, cuts=simcuts(chromos))
 
 comp2(50, 200, 5000, cuts=simcuts(chromos))
 comp2(50, 200, 5000, cuts=simcuts(chromos), filter=10)
 comp2(50, 200, 5000, cuts=simcuts(chromos), flank=3)
-comp2(50, 200, 5000, cuts=simcuts(chromos), prior.count=1)
+comp2(50, 200, 5000, cuts=simcuts(chromos))
 
 comp2(100, 200, 1000, cuts=simcuts(chromos))
 comp2(100, 200, 1000, cuts=simcuts(chromos), filter=5)
 comp2(100, 200, 1000, cuts=simcuts(chromos), flank=3)
-comp2(100, 200, 1000, cuts=simcuts(chromos), prior.count=1)
+comp2(100, 200, 1000, cuts=simcuts(chromos))
 
 comp2(10, 20, 1000, cuts=simcuts(chromos))
 comp2(10, 20, 1000, cuts=simcuts(chromos), filter=5)
 comp2(10, 20, 1000, cuts=simcuts(chromos), flank=3)
-comp2(10, 20, 1000, cuts=simcuts(chromos), prior.count=1)
+comp2(10, 20, 1000, cuts=simcuts(chromos))
 
 comp2(10, 20, 1000, cuts=simcuts(chromos), exclude=1)
 comp2(50, 20, 1000, cuts=simcuts(chromos), exclude=1)

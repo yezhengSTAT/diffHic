@@ -33,6 +33,4 @@ private:
 	bool failed;
 };
 
-double nb_average(const int&, const int&, const double&, const double*, const int*, const double&);
-
 #endif

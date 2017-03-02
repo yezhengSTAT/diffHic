@@ -1,5 +1,4 @@
-enrichedPairs <- function(data, flank=5, exclude=0, prior.count=2, abundances=NULL, 
-                          assay.in=1, assay.out=NULL)
+enrichedPairs <- function(data, flank=5, exclude=0, assay.in=1, assay.out=NULL)
 # For each bin pair in 'data', this function counts the number of read pairs in 
 # the neighbouring bin pairs in 'data', with four defined neighbourhood types.
 # 
@@ -78,12 +77,14 @@ enrichedPairs <- function(data, flank=5, exclude=0, prior.count=2, abundances=NU
 	}
 
     # Adding the counts to the data and returning the object.
+    n.names <- .neighbor_numbers(modes)
     for (m in seq_along(modes)) { 
         assay(data, modes[m]) <- count.output[[m]]
-        rowData(data)[[paste0("N.", modes[m])]] <- n.output[[m]]
+        mcols(data)[[n.names[m]]] <- n.output[[m]]
     }
 	return(data)
 }
 
-.neighbor_locales <- function() { c("quadrant", "horizontal", "vertical", "surrounding") }
+.neighbor_locales <- function() { c("quadrant", "vertical", "horizontal", "surrounding") }
 
+.neighbor_numbers <- function(x=.neighbor_locales()) { paste0("N.", x) }
