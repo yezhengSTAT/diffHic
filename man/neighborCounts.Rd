@@ -20,13 +20,13 @@ neighborCounts(files, param, width=50000, filter=1L, flank=NULL, exclude=NULL)
 
 \value{
 An InteractionSet object is returned with the number of read pairs for each bin pair across all libraries.
-For each bin pair, the number of read pairs in each neighbourhood region is also returned in separate \code{assay} fields.
-\code{mcols} contains the size of each neighbourhood in terms of the number of bin pairs.
+For each bin pair, the number of read pairs in each neighborhood region is also returned in separate \code{assay} fields.
+\code{mcols} contains the size of each neighborhood in terms of the number of bin pairs.
 }
 
 \details{
 This function combines the functionality of \code{\link{squareCounts}} and \code{\link{enrichedPairs}}.
-The idea is to allow counting of neighbourhoods when there is insufficient memory to load all bin pairs with \code{filter=1L} in \code{\link{squareCounts}}. 
+The idea is to allow counting of neighborhoods when there is insufficient memory to load all bin pairs with \code{filter=1L} in \code{\link{squareCounts}}. 
 Here, the interaction space around each bin pair is examined as the counts are loaded for that bin pair, avoiding the need to hold the entire interaction space at once.
 Only the counts and local enrichment values for those bin pairs with row sums above \code{filter} are reported to save memory.
 The returned \code{assay} matrices are equivalent to that computed with \code{\link{enrichedPairs}} with the default settings.

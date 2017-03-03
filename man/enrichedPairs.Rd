@@ -13,7 +13,7 @@ enrichedPairs(data, flank=5, exclude=0, assay.in=1, assay.out=NULL)
 \item{flank}{an integer scalar, specifying the number of bins to consider as the local neighborhood}
 \item{exclude}{an integer scalar, specifying the number of bins to exclude from the neighborhood}
 \item{assay.in}{a string or integer scalar, specifying the assay containing bin pair counts in \code{data}}
-\item{assay.out}{a character vector containing 4 unique names for the neighbourhood regions A-D, see below}
+\item{assay.out}{a character vector containing 4 unique names for the neighborhood regions A-D, see below}
 }
 
 \section{Definition of the neighborhoods}{
@@ -45,18 +45,18 @@ On the other hand, if \code{flank} is too small, there will not be enough neighb
 Both scenarios result in a decrease in enrichment values and loss of power to detect punctate events.
 The default value of 5 seems to work well, though users may wish to test several values for themselves.
 
-For each bin pair, the other bin pairs in \code{data} that belong to its neighbourhood are identified.
+For each bin pair, the other bin pairs in \code{data} that belong to its neighborhood are identified.
 The sum of counts across these bin pairs is computed for each library and stored in a matrix.
 This is repeated for each type of neighborhood (A-D), and the matrices are named based on \code{assay.out}.
-The area of each neighbourhood is also computed in terms of the number of bin pairs contained by the neighbourhood. 
-Note that the neighbourhood area includes bin pairs that are missing from \code{data}, as these are assumed to have a count of zero.
-See \code{\link{filterPeaks}} for how these neighbourhood counts are used to assess the \dQuote{peak-ness} of each bin pair.
+The area of each neighborhood is also computed in terms of the number of bin pairs contained by the neighborhood. 
+Note that the neighborhood area includes bin pairs that are missing from \code{data}, as these are assumed to have a count of zero.
+See \code{\link{filterPeaks}} for how these neighborhood counts are used to assess the \dQuote{peak-ness} of each bin pair.
 }
 
 \value{
 An object of the same type as \code{data} is returned, containing additional matrices in the \code{assays} slot.
-Each matrix contains the counts for one neighbourhood for each bin pair in each library.
-The area of each neighbourhood is also returned in the \code{mcols} and named with the \code{"N."} prefix.
+Each matrix contains the counts for one neighborhood for each bin pair in each library.
+The area of each neighborhood is also returned in the \code{mcols} and named with the \code{"N."} prefix.
 }
 
 \author{

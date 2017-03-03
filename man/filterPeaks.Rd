@@ -13,7 +13,7 @@ filterPeaks(data, enrichment, assay.bp=1, assay.neighbors=NULL, get.enrich=FALSE
 \item{data}{an InteractionSet object produced by \code{\link{enrichedPairs}} or \code{\link{neighborCounts}}}
 \item{enrichment}{a numeric vector of enrichment values}  
 \item{assay.bp}{a string or integer scalar specifying the assay containing bin pair counts}
-\item{assay.neighbors}{a character vector containing names for the neighbourhood regions, see \code{\link{enrichedPairs}} for details}
+\item{assay.neighbors}{a character vector containing names for the neighborhood regions, see \code{\link{enrichedPairs}} for details}
 \item{get.enrich}{a logical scalar indicating whether enrichment values should be returned}
 \item{min.enrich}{a numeric scalar indicating the minimum enrichment score for a peak}
 \item{min.count}{a numeric scalar indicating the minimum average count for a peak}
@@ -33,7 +33,7 @@ Filtering on the absolute average counts prevents the calling of low-abundance b
 Filtering on the diagonals prevents calling of high-abundance short-range interactions that are usually uninteresting.
 If either \code{min.count} or \code{min.diag} are \code{NULL}, no filtering will be performed on the average counts and diagonals, respectively.
 
-To compute enrichment values, we assume that the number of read pairs in neighbourhood areas have been counted using \code{\link{enrichedPairs}} or \code{\link{neighborCounts}}.
+To compute enrichment values, we assume that the number of read pairs in neighborhood areas have been counted using \code{\link{enrichedPairs}} or \code{\link{neighborCounts}}.
 For a given bin pair in \code{data}, this function computes the mean abundance across libraries for each surrounding neighborhood.
 The local background for the target bin pair is defined as the maximum of the mean abundances for all neighborhoods.
 The enrichment value is then defined as the the difference between the target bin pair's abundance and its local background.
