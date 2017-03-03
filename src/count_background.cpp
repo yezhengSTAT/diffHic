@@ -28,10 +28,7 @@ SEXP count_background(SEXP all, SEXP bin, SEXP back_width, SEXP exclude_width, S
 
 	// Setting up the memory containers.
 	const int ntbins=ltbin-ftbin+1, nabins=labin-fabin+1;
-	int* curcounts=(int*)R_alloc(nlibs*ntbins, sizeof(int)); 
-	bool* ischanged=(bool*)R_alloc(ntbins, sizeof(bool));
-    std::fill(ischanged, ischanged+ntbins, false);
-	std::deque<int> waschanged, counts, anchors, targets;
+	std::deque<int> counts, anchors, targets;
 
 	// Stuff required to compute the neighborhood.
 	std::deque<int> ref_targets, ref_anchors;
@@ -53,9 +50,11 @@ SEXP count_background(SEXP all, SEXP bin, SEXP back_width, SEXP exclude_width, S
 
 	while (1) { 
 		if (!engine.empty()) {
-			engine.fill(curcounts, ischanged, waschanged);
+			engine.fill();
 			curanchor=engine.get_anchor() - fabin;
-			
+            const std::deque<int>& waschanged=engine.get_changed();
+            const int* curcounts=engine.get_counts();
+
             for (vecdex=0; vecdex<waschanged.size(); ++vecdex) {
 				rowdex=waschanged[vecdex]*nlibs;
 
@@ -75,11 +74,7 @@ SEXP count_background(SEXP all, SEXP bin, SEXP back_width, SEXP exclude_width, S
 					targets.push_back(ref_targets.back());
 					for (curlib=0; curlib<nlibs; ++curlib) { counts.push_back(curcounts[rowdex+curlib]); }
 				}
-
-				// Resetting the ischanged vector for the next stretch of bin anchors.
-				ischanged[waschanged[vecdex]]=false;
 			}
-			waschanged.clear();
 
 			// Matching sizes of the vectors.
 			for (mode=startmode; mode<nmodes; ++mode) { 
