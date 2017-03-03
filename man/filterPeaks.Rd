@@ -13,7 +13,7 @@ filterPeaks(data, enrichment, assay.bp=1, assay.neighbors=NULL, get.enrich=FALSE
 \item{data}{an InteractionSet object produced by \code{\link{enrichedPairs}} or \code{\link{neighborCounts}}}
 \item{enrichment}{a numeric vector of enrichment values}  
 \item{assay.bp}{a string or integer scalar specifying the assay containing bin pair counts}
-\item{assay.out}{a character vector containing names for the neighbourhood regions, see \code{\link{enrichedPairs}} for details}
+\item{assay.neighbors}{a character vector containing names for the neighbourhood regions, see \code{\link{enrichedPairs}} for details}
 \item{get.enrich}{a logical scalar indicating whether enrichment values should be returned}
 \item{min.enrich}{a numeric scalar indicating the minimum enrichment score for a peak}
 \item{min.count}{a numeric scalar indicating the minimum average count for a peak}

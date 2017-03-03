@@ -89,14 +89,6 @@ head(enrichedPairs(data))
 head(enrichedPairs(data, flank=3))
 head(enrichedPairs(data, flank=1))
 head(enrichedPairs(data, exclude=1))
-
-# Accounting for distance.
-filtered <- suppressWarnings(filterTrended(data, prior.count=0))
-adj.ab <- filtered$abundances - filtered$threshold
-\dontshow{ # Not required for real data, just to avoid infinite values here:
-adj.ab[is.infinite(adj.ab)] <- filtered$abundances[is.infinite(adj.ab)] 
-}
-head(enrichedPairs(data, abundances=adj.ab))
 }
 
 \references{
