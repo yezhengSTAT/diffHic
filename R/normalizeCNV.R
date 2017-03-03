@@ -13,7 +13,7 @@ normalizeCNV <- function(data, margins, prior.count=3, span=0.3, maxk=500,
     # Checking for proper type.
     .check_StrictGI(data)
     data.binprs <- assay(data, assay.data)
-    data.margin <- assay(data, assay.marg)
+    data.margin <- assay(margins, assay.marg)
 
     # Smaller prior for bin pair count to calculate offsets;
     # larger prior for margin counts to stabilize covariates.
