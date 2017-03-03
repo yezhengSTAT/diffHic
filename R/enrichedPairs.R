@@ -26,14 +26,7 @@ enrichedPairs <- function(data, flank=5, exclude=0, assay.in=1, assay.out=NULL)
 	tid <- anchors(data, type="second", id=TRUE)
 
     # Setting up the output for each mode.
-    if (is.null(assay.out)) { 
-        modes <- .neighbor_locales()
-    } else { 
-        modes <- assay.out
-        if (!is.character(modes) || length(modes)!=4L || anyDuplicated(modes)) { 
-            stop("'assay.out' must be a character vector with 4 unique names")
-        }
-    }
+    modes <- .neighbor_locales(assay.out)
     count.output <- lapply(modes, FUN=function(x) matrix(0L, nrow=np, ncol=nl))
     n.output <- lapply(modes, FUN=function(x) numeric(np))
 
@@ -85,6 +78,19 @@ enrichedPairs <- function(data, flank=5, exclude=0, assay.in=1, assay.out=NULL)
 	return(data)
 }
 
-.neighbor_locales <- function() { c("quadrant", "vertical", "horizontal", "surrounding") }
+.neighbor_locales <- function(x=NULL) { 
+    if (is.null(x)) { 
+        modes <- c("quadrant", "vertical", "horizontal", "surrounding") 
+    } else { 
+        modes <- x
+        if (!is.character(modes) || length(modes)!=4L || anyDuplicated(modes)) { 
+            stop("'assay.out' must be a character vector with 4 unique names")
+        }
+    }
+    return(modes)
+}
 
-.neighbor_numbers <- function(x=.neighbor_locales()) { paste0("N.", x) }
+.neighbor_numbers <- function(x=NULL) { 
+    if (is.null(x)) x <- .neighbor_locales()
+    paste0("N.", x) 
+}
