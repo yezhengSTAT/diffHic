@@ -73,6 +73,9 @@ try {
         const int& aI=aiptr[pair];
         const int& tI=tiptr[pair];
         if (aI > 0 && tI > 0) { 
+            if (aI > nf || tI > nf) {
+                throw std::runtime_error("anchor indices out of range of fragments");
+            }
             curflen += (arev ? curaend - fsptr[aI] : feptr[aI] - curap + 1);
             curflen += (trev ? curtend - fsptr[tI] : feptr[tI] - curtp + 1);
         } else {
