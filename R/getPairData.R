@@ -6,12 +6,12 @@ getPairData <- function(file, param)
 # written by Aaron Lun
 # created 20 September 2014
 {
-	# Pulling out data and merging it.
 	alll <- allo <- alli <- list()
 	ix <- 1L
+    parsed <- .parseParam(param)
 
 	# Running through all pairs.	
-	allstuff <- .loadIndices(file, .getChrsInUse(param$fragments))
+	allstuff <- .loadIndices(file, parsed$chrs)
 	for (ax in names(allstuff)) {
 		current <- allstuff[[ax]] 
 		for (tx in names(current)) { 

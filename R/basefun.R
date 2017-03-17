@@ -113,100 +113,37 @@
 
 ####################################################################################################
 
-.parseParam <- function(param) {
+.parseParam <- function(param, width=NA_integer_) 
+# Parses the parameters and returns all values, depending on
+# whether we're dealing with a DNase-C experiment or not.
+{
     output <- list()
-    
     fragments <- param$fragments
-    if (length(fragments)==0L) { 
-        output$chrs <- seqlevels(fragments)
-        output$frag.by.chr <- list(chr=chrs, 
-                                   first=setNames(integer(
- 
+
+    if (length(fragments)==0L) {
+        all.lengths <- seqlengths(fragments)
+        chrs <- output$chrs <- names(all.lengths)
+        if (!is.na(width)) {
+            # Calculating the first and last bin for each chromosome.
+            nbins <- as.integer(ceiling(all.lengths/width))
+            last <- cumsum(nbins)
+            first <- last - nbins + 1L
+            names(first) <- names(last) <- chrs
+            output$frag.by.chr <- list(chr=chrs, first=first, last=last)
+        }
+        output$cap <- NA_integer_ # Doesn't make much sense when each 'fragment' is now a bin.
+        output$bwidth <- width
+
     } else {
         output$chrs <- seqlevelsInUse(fragments)
-        output$frag.by.chr <- .splitByChr(fragments)
+        output$frag.by.chr <- .splitByChr(fragments) 
+        output$cap <- param$cap
+        output$bwidth <- NA_integer_
     }
+
+    output$discard <- .splitDiscards(param$discard)
+    return(output)
 }
-
-####################################################################################################
-
-.baseHiCParser <- function(ok, files, anchor1, anchor2, chr.limits, discard, cap, width=NA)
-# A convenience function for loading counts from file for a given anchor/anchor pair.
-# It will also bin the read pairs if 'width' is specified (for DNase-C experiments).
-{
-    overall<-list()
-    adisc <- discard[[anchor1]]
-    tdisc <- discard[[anchor2]]
-    do.cap <- !is.na(cap) 
-    do.bin <- !is.na(width)
-
-    for (x in seq_along(ok)) {
-        if (!ok[x]) { 
-            overall[[x]] <- data.frame(anchor1.id=integer(0), anchor2.id=integer(0))
-        } else {
-            out <- .getPairs(files[x], anchor1, anchor2)
-    
-            # Checking fidelity of the input.
-            check <- .Call(cxx_check_input, out$anchor1.id, out$anchor2.id)
-            if (is.character(check)) { stop(check) }
-
-            # Checking that we're all on the right chromosome.
-            if (nrow(out)) { 
-                if (max(out$anchor1.id) > chr.limits$last[[anchor1]] || 
-                        min(out$anchor1.id) < chr.limits$first[[anchor1]]) { 
-                    stop("anchor1 index outside range of fragment object") 
-                }
-                if (max(out$anchor2.id) > chr.limits$last[[anchor2]] || 
-                        min(out$anchor2.id) < chr.limits$first[[anchor2]]) { 
-                    stop("anchor2 index outside range of fragment object") 
-                }
-            }
-
-            # Overlapping with those in the discard intervals.
-            if (!is.null(adisc) || !is.null(tdisc)) {
-                a.hits <- t.hits <- FALSE
-                if (!is.null(adisc)) {
-                    a.hits <- overlapsAny(IRanges(out$anchor1.pos, out$anchor1.pos+abs(out$anchor1.len)-1L), adisc, type="within")
-                }
-                if (!is.null(tdisc)) { 
-                    t.hits <- overlapsAny(IRanges(out$anchor2.pos, out$anchor2.pos+abs(out$anchor2.len)-1L), tdisc, type="within")
-                }
-                out <- out[!a.hits & !t.hits,,drop=FALSE]
-            }
-
-            # Removing read pairs above the cap for each restriction fragment pair.
-            if (do.cap) { 
-                capped <- .Call(cxx_cap_input, out$anchor1.id, out$anchor2.id, cap)
-                if (is.character(capped)) { stop(capped) }
-                out <- out[capped,]
-            }
-
-            if (!is.na(width)) { out <- .binReads(out, width) } 
-            dim(out$anchor1.id) <- dim(out$anchor2.id) <- NULL
-            overall[[x]] <- out[,c("anchor1.id", "anchor2.id")]
-        }
-    }
-    return(overall)
-}
-
-.binReads <- function(pairs, width) {
-    a1.5pos <- pairs$anchor1.pos
-    a1.5len <- pairs$anchor1.len
-    a1.r <- a1.5len < 0L
-    a1.5pos[a1.r] <- a1.5pos[a1.r] + a1.len[a1.r] - 1L
-
-    a2.5pos <- pairs$anchor2.pos
-    a2.5len <- pairs$anchor2.len
-    a2.r <- a2.5len < 0L
-    a2.5pos[a2.r] <- a2.5pos[a2.r] + a2.len[a2.r] - 1L
-
-    pairs$anchor1.id <- ceiling(a1.5pos/width)
-    pairs$anchor2.id <- ceiling(a2.5pos/width)
-    o <- order(pairs$anchor1.id, pairs$anchor2.id)
-    pairs[o,]
-}
-
-####################################################################################################
 
 .splitDiscards <- function(discard) 
 # Splits the discard GRanges into a list of constituent chromosomes,
@@ -232,9 +169,88 @@
 
 ####################################################################################################
 
-.getChrsInUse <- function(fragments) 
-# Gets the chromosomes that are available. If we're 
-# working with DNase-C data, this is all seqlevels,
-# otherwise it's just the ones that are in use.    
+.baseHiCParser <- function(ok, files, anchor1, anchor2, chr.limits, discard, cap, width=NA)
+# A convenience function for loading counts from file for a given anchor/anchor pair.
+# It will also bin the read pairs if 'width' is specified (for DNase-C experiments).
 {
+    overall<-list()
+    adisc <- discard[[anchor1]]
+    tdisc <- discard[[anchor2]]
+    do.cap <- !is.na(cap) 
+    do.bin <- !is.na(width)
+
+    for (x in seq_along(ok)) {
+        if (!ok[x]) { 
+            overall[[x]] <- data.frame(anchor1.id=integer(0), anchor2.id=integer(0))
+        } else {
+            first1 <- chr.limits$first[[anchor1]] 
+            first2 <- chr.limits$first[[anchor2]] 
+            last1 <- chr.limits$last[[anchor1]] 
+            last2 <- chr.limits$last[[anchor2]] 
+
+            # Pulling out the reads, binning if necessary, and checking fidelity of the input.
+            out <- .getPairs(files[x], anchor1, anchor2)
+            if (!is.na(width)) { out <- .binReads(out, width, first1, first2) } 
+            check <- .Call(cxx_check_input, out$anchor1.id, out$anchor2.id)
+            if (is.character(check)) { stop(check) }
+
+            # Checking that we're all on the right chromosome.
+            if (nrow(out)) { 
+                if (max(out$anchor1.id) > last1 || min(out$anchor1.id) < first1) {
+                    stop("anchor1 index outside range of fragment object") 
+                }
+                if (max(out$anchor2.id) > last2 || min(out$anchor2.id) < first2) {
+                    stop("anchor2 index outside range of fragment object") 
+                }
+            }
+
+            # Overlapping with those in the discard intervals.
+            if (!is.null(adisc) || !is.null(tdisc)) {
+                a.hits <- t.hits <- FALSE
+                if (!is.null(adisc)) {
+                    a.hits <- overlapsAny(IRanges(out$anchor1.pos, out$anchor1.pos+abs(out$anchor1.len)-1L), adisc, type="within")
+                }
+                if (!is.null(tdisc)) { 
+                    t.hits <- overlapsAny(IRanges(out$anchor2.pos, out$anchor2.pos+abs(out$anchor2.len)-1L), tdisc, type="within")
+                }
+                out <- out[!a.hits & !t.hits,,drop=FALSE]
+            }
+
+            # Removing read pairs above the cap for each restriction fragment pair.
+            if (do.cap) { 
+                capped <- .Call(cxx_cap_input, out$anchor1.id, out$anchor2.id, cap)
+                if (is.character(capped)) { stop(capped) }
+                out <- out[capped,]
+            }
+
+            dim(out$anchor1.id) <- dim(out$anchor2.id) <- NULL
+            overall[[x]] <- out[,c("anchor1.id", "anchor2.id")]
+        }
+    }
+    return(overall)
 }
+
+.binReads <- function(pairs, width, first1, first2)
+# Binning the read pairs into bins of size 'width',
+# based on the 5' coordinates of each read.
+{
+    a1.5pos <- pairs$anchor1.pos
+    a1.5len <- pairs$anchor1.len
+    a1.r <- a1.5len < 0L
+    a1.5len[a1.r] <- -a1.5len[a1.r]
+    a1.5pos[a1.r] <- a1.5pos[a1.r] + a1.5len[a1.r] - 1L
+
+    a2.5pos <- pairs$anchor2.pos
+    a2.5len <- pairs$anchor2.len
+    a2.r <- a2.5len < 0L
+    a2.5len[a2.r] <- -a2.5len[a2.r]
+    a2.5pos[a2.r] <- a2.5pos[a2.r] + a2.5len[a2.r] - 1L
+
+    pairs$anchor1.id <- as.integer(ceiling(a1.5pos/width)) - 1L + first1
+    pairs$anchor2.id <- as.integer(ceiling(a2.5pos/width)) - 1L + first2
+    o <- order(pairs$anchor1.id, pairs$anchor2.id)
+    pairs[o,]
+}
+
+####################################################################################################
+
