@@ -23,7 +23,7 @@ savePairs <- function(x, file, param)
     parsed <- .parseParam(param)
 	frag.out <- parsed$frag.by.chr
 	all.chrs <- parsed$chrs
-    if (length(fragments)) { 
+    if (length(param$fragments)) { 
         full.chrs <- rep(seq_along(all.chrs), frag.out$last-frag.out$first+1L)
         achr <- full.chrs[x$anchor1.id]
         tchr <- full.chrs[x$anchor2.id]

@@ -27,7 +27,7 @@ totalCounts <- function(files, param)
 
 			# Getting totals.
 			pairs <- .baseHiCParser(current[[target]], files, anchor, target, 
-				chr.limits=frag.by.chr, discard=discard, cap=cap, bwidth=NA_integer_)
+				chr.limits=frag.by.chr, discard=discard, cap=cap, width=NA_integer_)
 			full.sizes <- full.sizes + sapply(pairs, FUN=nrow)
 		}
 	}

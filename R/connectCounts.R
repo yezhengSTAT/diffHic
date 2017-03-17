@@ -37,20 +37,33 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
         stop("chromosomes missing from 'fragments'")
     }
 
+    nfrags <- length(fragments)
 	nregs <- length(regions)
 	o <- order(matched, start(regions), end(regions)) # Stable sort preserves order, if expanded intervals are identical.
 	regions <- regions[o]
-
 	ranked <- integer(nregs)
 	ranked[o] <- seq_along(o)
 	reg.ids <- ranked[reg.ids]
-	by.frag <- .retrieveHits(frag.ids, length(fragments))
+
+    use.second <- !is.null(second.regions)
+    if (!use.second) {
+        by.frag1 <- .retrieveHits(frag.ids, nfrags)
+        by.frag2 <- by.frag1
+        reg.id1 <- reg.ids
+        reg.id2 <- NULL
+    } else {
+        is2 <- regions$is.second[reg.ids]
+        reg.id1 <- reg.ids[!is2]
+        by.frag1 <- .retrieveHits(frag.ids[!is2], nfrags) 
+        reg.id2 <- reg.ids[is2]
+        by.frag2 <- .retrieveHits(frag.ids[is2], nfrags) 
+    }
 
 	# Setting up output containers.
 	full.sizes <- integer(nlibs)
 	out.counts <- list(matrix(0L, 0, nlibs))
 	out.right <- out.left <- list(integer(0))
-	idex<-1L
+	idex <- 1L
 
 	my.chrs <- unique(runValue(seqnames(regions)))
 	overall <- .loadIndices(files, chrs, restrict)
@@ -64,7 +77,8 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 			if (! (target %in% my.chrs) || ! (anchor %in% my.chrs)) { next }	
 
 			# Extracting counts. Running through the fragments and figuring out what matches where.
-			out <- .Call(cxx_count_connect, pairs, by.frag$start, by.frag$end, reg.ids, filter, regions$is.second)
+			out <- .Call(cxx_count_connect, pairs, by.frag1$start, by.frag1$end, reg.id1, 
+                         by.frag2$start, by.frag2$end, reg.id2, filter)
 			if (is.character(out)) { stop(out) }
 			out.counts[[idex]] <- out[[3]]
 			out.left[[idex]] <- out[[1]]
@@ -73,13 +87,7 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 		}
 	}
 
-	out.counts <- do.call(rbind, out.counts)
-	anchors <- unlist(out.left)
-	targets <- unlist(out.right)
-	out <- InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
-		interactions=GInteractions(anchor1=anchors, anchor2=targets, regions=regions, mode="reverse"), 
-        metadata=List(param=param))
-    return(sort(out))
+    .generateOutput(out.counts, out.left, out.right, full.sizes, regions, param)
 }
 
 ##############################################################################################
@@ -94,9 +102,17 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
         warning("chromosome present in 'regions' and not in fragments") 
         regions <- regions[remaining]
     }
+    if (any(strand(regions)!="*")) { 
+        warning("stranded region ranges have no interpretation, coercing unstrandedness") 
+        strand(regions) <- "*"
+    }
+    if (any(strand(fragments)!="*")) { 
+        warning("stranded fragment ranges have no interpretation, coercing unstrandedness") 
+        strand(fragments) <- "*"
+    }
 
 	# Checking out which regions overlap with each fragment.
-	olaps <- suppressWarnings(findOverlaps(fragments, regions, type=type, ignore.strand=TRUE))
+	olaps <- suppressWarnings(findOverlaps(fragments, regions, type=type))
 	frag.ids <- queryHits(olaps)
 	reg.ids <- subjectHits(olaps)
 	regions <- .redefineRegions(olaps, fragments, regions)
@@ -109,8 +125,12 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
                 warning("chromosome present in 'second.regions' and not in fragments") 
                 second.regions <- second.regions[remaining2]
             }
-            
-            lap2 <- suppressWarnings(findOverlaps(fragments, second.regions, type=type, ignore.strand=TRUE))
+            if (any(strand(second.regions)!="*")) { 
+                warning("stranded region ranges have no interpretation, coercing unstrandedness") 
+                strand(second.regions) <- "*"
+            }
+
+            lap2 <- suppressWarnings(findOverlaps(fragments, second.regions, type=type))
             to.add.query <- queryHits(lap2)
             to.add.subject <- subjectHits(lap2)
             second.regions <- .redefineRegions(lap2, fragments, second.regions)
@@ -143,7 +163,10 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
     return(list(regions=regions, frag.ids=frag.ids, reg.ids=reg.ids))
 }
 
-.retrieveHits <- function(frag.id, nfrags) { 
+.retrieveHits <- function(frag.id, nfrags) 
+# Figures out the start and end index of the queryHits vector for
+# each fragment, allowing it to rapidly index the subjectHits vector.
+{ 
 	start <- end <- integer(nfrags)
 	is.first <- c(TRUE, diff(frag.id)!=0L)
 	start[frag.id[is.first]] <- which(is.first)
@@ -151,7 +174,10 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	return(list(start=start, end=end))
 }
 
-.redefineRegions <- function(olaps, fragments, regions) {
+.redefineRegions <- function(olaps, fragments, regions) 
+# Stretches out regions to encompass the fragments it overlaps
+# (regions that don't overlap any fragments are ignored).
+{
 	so <- subjectHits(olaps)
 	qo <- queryHits(olaps)
 	reo <- order(so, qo)
@@ -171,11 +197,26 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	return(regions)		
 }
 
+.generateOutput <- function(out.counts, out.left, out.right, full.sizes, regions, param) 
+# A function to generate output.
+{
+	out.counts <- do.call(rbind, out.counts)
+	anchors <- unlist(out.left)
+	targets <- unlist(out.right)
+	out <- InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
+		interactions=GInteractions(anchor1=anchors, anchor2=targets, regions=regions, mode="reverse"), 
+        metadata=List(param=param))
+    sort(out)
+}
+
 ##############################################################################################
 
 .connectCountsRaw <- function(files, param, regions, filter=1L, type="any", second.regions=NULL)
 # An equivalent function for DNase-C data. This uses the linkOverlaps() machinery
 # to do the heavy lifting, as the C++ code written above is designed for restriction fragments.
+#
+# written by Aaron Lun
+# created 17 March 2017
 {
     nlibs <- length(files)
 	if (nlibs==0L) { stop("number of libraries must be positive") } 
@@ -221,8 +262,11 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
             collected <- list()
             for (lib in seq_along(pairs)) {
                 cpair <- pairs[[lib]] 
-                sgi <- suppressWarnings(GInteractions(GRanges(anchor, IRanges(cpair$anchor1.pos, width=abs(cpair$anchor1.len))),
-                                                      GRanges(target, IRanges(cpair$anchor2.pos, width=abs(cpair$anchor2.len))),
+                five1 <- cpair$anchor1.pos + ifelse(cpair$anchor1.len < 0L, -1L-cpair$anchor1.len, 0L)
+                five2 <- cpair$anchor2.pos + ifelse(cpair$anchor2.len < 0L, -1L-cpair$anchor2.len, 0L)
+
+                sgi <- suppressWarnings(GInteractions(GRanges(anchor, IRanges(five1, width=1)),
+                                                      GRanges(target, IRanges(five2, width=1)),
                                                       mode="strict"))
                 if (is.null(second.regions)) { 
                     li <- linkOverlaps(sgi, region1)
@@ -246,11 +290,5 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
         }
     }
 
-	out.counts <- do.call(rbind, out.counts)
-	anchors <- unlist(out.left)
-	targets <- unlist(out.right)
-	out <- InteractionSet(list(counts=out.counts), colData=DataFrame(totals=full.sizes), 
-		interactions=GInteractions(anchor1=anchors, anchor2=targets, regions=regions, mode="reverse"), 
-        metadata=List(param=param))
-    return(sort(out))
+    .generateOutput(out.counts, out.left, out.right, full.sizes, regions, param)
 }

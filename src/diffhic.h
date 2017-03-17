@@ -42,7 +42,7 @@ SEXP quadrant_bg (SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 SEXP count_background(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP); 
 
-SEXP count_connect(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP count_connect(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 SEXP count_reconnect(SEXP, SEXP);
 
