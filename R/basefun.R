@@ -108,6 +108,7 @@
     }
     suppressWarnings(everything <- do.call(c, everything))
     seqlengths(everything) <- ref.len
+    everything$nfrags <- 1L
     return(list(id=seq_along(everything), region=everything))
 }
 
@@ -123,14 +124,19 @@
     if (length(fragments)==0L) {
         all.lengths <- seqlengths(fragments)
         chrs <- output$chrs <- names(all.lengths)
+
         if (!is.na(width)) {
             # Calculating the first and last bin for each chromosome.
             nbins <- as.integer(ceiling(all.lengths/width))
             last <- cumsum(nbins)
             first <- last - nbins + 1L
-            names(first) <- names(last) <- chrs
-            output$frag.by.chr <- list(chr=chrs, first=first, last=last)
+        } else {
+            first <- integer(length(chrs))
+            last <- rep(.Machine$integer.max, length(chrs))
         }
+            
+        names(first) <- names(last) <- chrs
+        output$frag.by.chr <- list(chr=chrs, first=first, last=last)
         output$cap <- NA_integer_ # Doesn't make much sense when each 'fragment' is now a bin.
         output$bwidth <- width
 

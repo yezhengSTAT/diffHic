@@ -17,8 +17,7 @@ squareCounts <- function(files, param, width=50000, filter=1L)
 	filter <- as.integer(filter) 
 
     # Setting up the bins.
-	fragments <- param$fragments
-	new.pts <- .getBinID(fragments, width)
+	new.pts <- .getBinID(param$fragments, width)
 	bin.by.chr <- .splitByChr(new.pts$region)
 
     # Setting up the other statistics.
