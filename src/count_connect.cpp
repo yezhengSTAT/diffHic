@@ -1,5 +1,23 @@
 #include "read_count.h"
 
+void accumulate_pairs(const int& curab, const int& curtb, pair_queue& next, 
+        std::deque<const int*>& aptrs, std::deque<const int*>& tptrs, 
+        std::deque<int>& nums, std::deque<int>& indices, 
+        std::deque<int>& counts) {
+    // This speeds things up by collecting entries with the same fragment indices.
+    int curlib;
+    do {
+        curlib=next.top().library;
+        int& libdex=indices[curlib];
+        counts[curlib]+=1;
+        next.pop();
+        if ((++libdex) < nums[curlib]) {
+            next.push(coord(aptrs[curlib][libdex], tptrs[curlib][libdex], curlib));
+        } 
+    } while (!next.empty() && next.top().anchor==curab && next.top().target==curtb);
+    return;
+}
+
 SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEXP is_second) try {		
 	if (!isInteger(start) || !isInteger(end) || !isInteger(region)) { 
 		throw std::runtime_error("fragment/region indices must be integer vectors"); }
@@ -32,32 +50,13 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 	const int nlibs=LENGTH(all);
 	std::deque<const int*> aptrs(nlibs), tptrs(nlibs);
 	std::deque<int> nums(nlibs), indices(nlibs);
-	std::priority_queue<coord, std::deque<coord>, std::greater<coord> > next;
-
-	for (int i=0; i<nlibs; ++i) {
-		SEXP current=VECTOR_ELT(all, i);
-		if (!isNewList(current) || LENGTH(current)!=2) { 
-			throw std::runtime_error("interactions must be supplied as a data.frame with anchor.id, target.id"); }
-
-		for (int j=0; j<2; ++j) {
-			SEXP current_col=VECTOR_ELT(current, j);
-			if (!isInteger(current_col)) { throw std::runtime_error("interaction data must be in integer format"); }
-			int* ptr=INTEGER(current_col);
-			switch (j) {
-				case 0: 
-					aptrs[i]=ptr; 
-					nums[i]=LENGTH(current_col);
-					break;
-				case 1: 
-					tptrs[i]=ptr; 
-					if (LENGTH(current_col)!=nums[i]) { throw std::runtime_error("vectors should be the same length"); }
-					break;
-				default: break;
-			}
-		}
-		// Populating the priority queue.
-		if (nums[i]) { next.push(coord(aptrs[i][0], tptrs[i][0], i)); }
-	}
+    setup_pair_data(all, nlibs, aptrs, tptrs, nums, indices);
+    
+    pair_queue next;
+    int lib;
+    for (lib=0; lib<nlibs; ++lib) {
+        if (nums[lib]) { next.push(coord(aptrs[lib][0], tptrs[lib][0], lib)); }
+    }
 	
 	// Running through all libraries.
 	std::deque<int> counts;
@@ -66,10 +65,10 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 	std::map<combo, std::pair<int, int> >::iterator itb;
 	std::deque<int> curcounts(nlibs);
 
-	int curab, curtb, curlib;
+	int curab, curtb;
 	combo temp;
 	int counter=0;
-	int x1, x2, lib;
+	int x1, x2;
 
 	int smallest=-1;
 	std::deque<int> returned_anchors, returned_targets;
@@ -81,17 +80,7 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 		curab=next.top().anchor;
 		curtb=next.top().target;
 		++counter;
-
-		// This speeds things up by collecting entries with the same fragment indices.
-		do {
-			curlib=next.top().library;
-			int& libdex=indices[curlib];
-			curcounts[curlib]+=1;
-			next.pop();
-			if ((++libdex) < nums[curlib]) {
-				next.push(coord(aptrs[curlib][libdex], tptrs[curlib][libdex], curlib));
-			} 
-		} while (!next.empty() && next.top().anchor==curab && next.top().target==curtb);
+        accumulate_pairs(curab, curtb, next, aptrs, tptrs, nums, indices, curcounts); 
 
 		/* Allocating counts to every pair of ranges containing these fragments. This
  		 * shouldn't be too sadistic if there aren't too many overlapping ranges.
@@ -140,7 +129,7 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 		}
 
 		// Resetting.
-		for (lib=0; lib<nlibs; ++lib) { curcounts[lib]=0; }
+        std::fill(curcounts.begin(), curcounts.end(), 0);
 
 		/* Removing all entries where the first index is below the smallest region index for the anchor 
 		 * fragment. As we iterate, the anchor fragment will increase, so the smallest region index cannot 
@@ -190,9 +179,9 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 		int* toptr=INTEGER(VECTOR_ELT(output, 1));
 		SET_VECTOR_ELT(output, 2, allocMatrix(INTSXP, ncombos, nlibs));
 		std::deque<int*> coptrs(nlibs);
-		for (int i=0; i<nlibs; ++i) {
-			if (i==0) { coptrs[i]=INTEGER(VECTOR_ELT(output, 2)); }
-			else { coptrs[i]=coptrs[i-1]+ncombos; }
+		for (lib=0; lib<nlibs; ++lib) {
+			if (lib==0) { coptrs[lib]=INTEGER(VECTOR_ELT(output, 2)); }
+			else { coptrs[lib]=coptrs[lib-1]+ncombos; }
 		}	
 		
 		// Iterating across and filling both the matrix and the components.
@@ -200,7 +189,7 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 			aoptr[odex]=returned_anchors[odex];
 			toptr[odex]=returned_targets[odex];
 			const int& index=count_indices[odex];
-			for (int i=0; i<nlibs; ++i) { coptrs[i][odex]=counts[index+i]; }
+			for (lib=0; lib<nlibs; ++lib) { coptrs[lib][odex]=counts[index+lib]; }
 		}
 	} catch (std::exception& e) { 
 		UNPROTECT(1);
@@ -212,3 +201,81 @@ SEXP count_connect(SEXP all, SEXP start, SEXP end, SEXP region, SEXP filter, SEX
 } catch (std::exception& e) {
 	return mkString(e.what());
 }
+
+/* This does the same for DNase-C data, where the assignment into ranges 
+ * has already been done at the R-level using linkOverlaps.
+ */
+
+SEXP count_reconnect(SEXP links, SEXP filter) try {	
+	// Setting up the structure to the links.
+ 	const int nlibs=LENGTH(links);
+	std::deque<const int*> aptrs(nlibs), tptrs(nlibs);
+	std::deque<int> nums(nlibs), indices(nlibs);
+    setup_pair_data(links, nlibs, aptrs, tptrs, nums, indices);
+
+    pair_queue next;
+    int lib;
+    for (lib=0; lib<nlibs; ++lib) {
+        if (nums[lib]) { next.push(coord(aptrs[lib][0], tptrs[lib][0], lib)); }
+    }
+
+    // Checking scalars.
+ 	if (!isInteger(filter) || LENGTH(filter)!=1) { throw std::runtime_error("filter value must be an integer scalar"); }
+	const int filtval=asInteger(filter);
+
+   // Running through the pairs.
+    std::deque<int> returned_anchors, returned_targets;
+	std::deque<int> counts;
+	std::deque<int> curcounts(nlibs);
+    int total, curab, curtb;
+
+    while (!next.empty()) {
+		curab=next.top().anchor;
+		curtb=next.top().target;
+        accumulate_pairs(curab, curtb, next, aptrs, tptrs, nums, indices, curcounts); 
+
+        // Inserting if the sum of counts exceeds the value.
+        total=0;
+        for (lib=0; lib<nlibs; ++lib) { total += curcounts[lib]; }
+        if (total >= filtval) { 
+            returned_anchors.push_back(curab);
+            returned_targets.push_back(curtb);
+            for (lib=0; lib<nlibs; ++lib) { counts.push_back(curcounts[lib]); }
+        }
+        std::fill(curcounts.begin(), curcounts.end(), 0);
+    }
+
+    // Saving the output.
+	SEXP output=PROTECT(allocVector(VECSXP, 3));
+	try {
+        const int ncombos = returned_anchors.size();
+		SET_VECTOR_ELT(output, 0, allocVector(INTSXP, ncombos));
+		int* aoptr=INTEGER(VECTOR_ELT(output, 0));
+		SET_VECTOR_ELT(output, 1, allocVector(INTSXP, ncombos));
+		int* toptr=INTEGER(VECTOR_ELT(output, 1));
+		SET_VECTOR_ELT(output, 2, allocMatrix(INTSXP, ncombos, nlibs));
+		std::deque<int*> coptrs(nlibs);
+		for (lib=0; lib<nlibs; ++lib) {
+			if (lib==0) { coptrs[lib]=INTEGER(VECTOR_ELT(output, 2)); }
+			else { coptrs[lib]=coptrs[lib-1]+ncombos; }
+		}	
+		
+		// Iterating across and filling both the matrix and the components.
+        int index;
+		for (size_t odex=0; odex < ncombos; ++odex) { 
+			aoptr[odex]=returned_anchors[odex];
+			toptr[odex]=returned_targets[odex];
+			index=odex*nlibs;
+			for (lib=0; lib<nlibs; ++lib) { coptrs[lib][odex]=counts[index+lib]; }
+		}
+	} catch (std::exception& e) { 
+		UNPROTECT(1);
+		throw;
+	}   
+
+    UNPROTECT(1);
+    return output;
+} catch (std::exception& e) {
+    return mkString(e.what());
+}
+

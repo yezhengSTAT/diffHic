@@ -175,7 +175,7 @@
 
 ####################################################################################################
 
-.baseHiCParser <- function(ok, files, anchor1, anchor2, chr.limits, discard, cap, width=NA)
+.baseHiCParser <- function(ok, files, anchor1, anchor2, chr.limits, discard, cap, width=NA, retain=c("anchor1.id", "anchor2.id"))
 # A convenience function for loading counts from file for a given anchor/anchor pair.
 # It will also bin the read pairs if 'width' is specified (for DNase-C experiments).
 {
@@ -230,7 +230,7 @@
             }
 
             dim(out$anchor1.id) <- dim(out$anchor2.id) <- NULL
-            overall[[x]] <- out[,c("anchor1.id", "anchor2.id")]
+            overall[[x]] <- out[,retain]
         }
     }
     return(overall)
