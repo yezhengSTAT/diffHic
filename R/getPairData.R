@@ -5,6 +5,7 @@ getPairData <- function(file, param)
 #
 # written by Aaron Lun
 # created 20 September 2014
+# last modified 17 March 2017
 {
 	alll <- allo <- alli <- list()
 	ix <- 1L
