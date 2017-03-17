@@ -18,7 +18,7 @@ static const R_CallMethodDef all_call_entries[] = {
 	CALLDEF(count_patch, 5),
 	CALLDEF(iterative_correction, 9),
 	CALLDEF(report_hic_pairs, 10),
-	CALLDEF(report_hic_binned_pairs, 10),
+	CALLDEF(report_hic_binned_pairs, 9),
 	CALLDEF(test_parse_cigar, 1),
 	CALLDEF(test_fragment_assign, 6),
     CALLDEF(pair_stats, 9),
