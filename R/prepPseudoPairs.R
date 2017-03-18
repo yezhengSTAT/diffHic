@@ -26,7 +26,7 @@ prepPseudoPairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, c
     m <- match(bam.chrs, chrs)
     if (any(is.na(m))) { stop("missing chromosomes in cut site list") }
 	for (x in seq_along(bam.chrs)) {
-		if (chromosomes[x]!=chrlens[x]) { 
+		if (chromosomes[x]!=chrlens[m[x]]) { 
 			stop("length of ", bam.chrs[x], " is not consistent between BAM file and fragments")
 		}
 	}

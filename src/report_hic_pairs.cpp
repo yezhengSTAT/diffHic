@@ -49,15 +49,13 @@ fragment_finder::fragment_finder(SEXP starts, SEXP ends) {
 int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, const int& l) const {
 	// Binary search to obtain the fragment index with 5' end coordinates.
 	int index=0;
+    const int& nfrag=pos[c].num;
 	if (r) {
 		int pos5=p+l-1;
 		const int* eptr=pos[c].end_ptr;
-		index= std::lower_bound(eptr, eptr+pos[c].num, pos5)-eptr;
-		if (index==pos[c].num) {
+		index=std::lower_bound(eptr, eptr+nfrag, pos5)-eptr;
+		if (index==nfrag) {
 			warning("read aligned off end of chromosome");
-			--index;
-		} else if (pos[c].start_ptr[index] > pos5) {
-			warning("read aligned into spacer region for a filled-in genome");
 			--index;
 		}
 	} else {
@@ -67,11 +65,7 @@ int fragment_finder::find_fragment(const int& c, const int& p, const bool& r, co
  		 * in the spacer for filled-in genomes. We then simply kick up the index.
  		 */
 		const int* sptr=pos[c].start_ptr;
-		index=std::upper_bound(sptr, sptr+pos[c].num, p)-sptr-1;
-		if (pos[c].end_ptr[index] < p) {
-			warning("read starts in spacer region for a filled genome");
-			++index;
-		}
+		index=std::upper_bound(sptr, sptr+nfrag, p)-sptr-1;
 	}
 	return index;
 }
