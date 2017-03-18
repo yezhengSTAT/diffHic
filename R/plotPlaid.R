@@ -27,7 +27,7 @@ plotPlaid <- function(file, param, first.region, second.region=first.region,
     frag.by.chr <- parsed$frag.by.chr
     discard <- parsed$discard
     cap <- parsed$cap
-    bwidth <- parsed$width
+    bwidth <- parsed$bwidth
 
 	if (!(first.chr %in% chrs) || !(second.chr %in% chrs)) { 
 		stop("anchor chromosome names not in cut site list") 

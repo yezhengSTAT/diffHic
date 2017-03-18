@@ -19,7 +19,7 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
     frag.by.chr <- parsed$frag.by.chr
     discard <- parsed$discard
     cap <- parsed$cap
-    bwidth <- parsed$width
+    bwidth <- parsed$bwidth
 
 	if (!xchr %in% chrs) { stop("chromosome name not in cut site list") } 
 

@@ -72,7 +72,7 @@ prepPseudoPairs(hic.file, param, tmpf, dedup=FALSE)
 prepPseudoPairs(hic.file, param, tmpf, minq=50)
 prepPseudoPairs(hic.file, param, tmpf, chim.span=20)
 
-getPairData(tmpf)
+getPairData(tmpf, param)
 
 \dontshow{
 unlink(tmpf)
