@@ -196,7 +196,7 @@
 
             # Pulling out the reads, binning if necessary, and checking fidelity of the input.
             out <- .getPairs(files[x], anchor1, anchor2)
-            if (!is.na(width)) { out <- .binReads(out, width, first1, first2) } 
+            if (!is.na(width)) { out <- .binReads(out, width, first1, first2, last1, last2) } 
             check <- .Call(cxx_check_input, out$anchor1.id, out$anchor2.id)
             if (is.character(check)) { stop(check) }
 
@@ -236,24 +236,32 @@
     return(overall)
 }
 
-.binReads <- function(pairs, width, first1, first2)
+.binReads <- function(pairs, width, first1, first2, last1, last2)
 # Binning the read pairs into bins of size 'width',
 # based on the 5' coordinates of each read.
 {
     a1.5pos <- pairs$anchor1.pos
     a1.5len <- pairs$anchor1.len
     a1.r <- a1.5len < 0L
-    a1.5len[a1.r] <- -a1.5len[a1.r]
-    a1.5pos[a1.r] <- a1.5pos[a1.r] + a1.5len[a1.r] - 1L
+    a1.5pos[a1.r] <- a1.5pos[a1.r] - a1.5len[a1.r] - 1L
 
     a2.5pos <- pairs$anchor2.pos
     a2.5len <- pairs$anchor2.len
     a2.r <- a2.5len < 0L
-    a2.5len[a2.r] <- -a2.5len[a2.r]
-    a2.5pos[a2.r] <- a2.5pos[a2.r] + a2.5len[a2.r] - 1L
+    a2.5pos[a2.r] <- a2.5pos[a2.r] - a2.5len[a2.r] - 1L
 
-    pairs$anchor1.id <- as.integer(ceiling(a1.5pos/width)) - 1L + first1
-    pairs$anchor2.id <- as.integer(ceiling(a2.5pos/width)) - 1L + first2
+    pairs$anchor1.id <- pmin(as.integer(ceiling(a1.5pos/width)) - 1L + first1, last1)
+    pairs$anchor2.id <- pmin(as.integer(ceiling(a2.5pos/width)) - 1L + first2, last2)
+    
+    # Enforcing 1 > 2.
+    swap <- pairs$anchor2.id > pairs$anchor1.id
+    flipping <- pairs[swap,]
+    has.one <- grepl("1", colnames(flipping))
+    has.two <- grepl("2", colnames(flipping))
+    colnames(flipping)[has.one] <- sub("1", "2", colnames(flipping)[has.one])
+    colnames(flipping)[has.two] <- sub("2", "1", colnames(flipping)[has.two])
+    pairs <- rbind(pairs[!swap,], flipping)
+
     o <- order(pairs$anchor1.id, pairs$anchor2.id)
     pairs[o,]
 }
