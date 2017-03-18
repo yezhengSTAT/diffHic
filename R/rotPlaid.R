@@ -29,7 +29,8 @@ rotPlaid <- function(file, param, region, width=10000, col="black", max.count=20
     if (length(fragments)==0L){ # For DNase-C, we set up boxes first and then redefine the fragments.
         new.pts <- .getBinID(fragments, width)
         fragments <- new.pts$region
-        new.pts <- lapply(new.pts, "[", cur.chrs)
+        new.pts$region <- new.pts$region[cur.chrs]
+        new.pts$id <- seq_along(cur.chrs)
     } else {
         new.pts <- .getBinID(fragments[cur.chrs], width)
     }

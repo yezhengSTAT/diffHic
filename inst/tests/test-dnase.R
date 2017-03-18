@@ -121,6 +121,8 @@ comp <- function(chrs, npairs1, npairs2, dist, rlen=10, filter=1L, restrict=NULL
     return(head(assay(y)))
 }
 
+set.seed(234711)
+
 chrs <- c(chrA=1000, chrB=2000)
 comp(chrs, 100, 200, 100, rlen=10, filter=1L, restrict=NULL, cap=NA)
 comp(chrs, 200, 200, 100, rlen=10, filter=1L, restrict=NULL, cap=NA)
