@@ -140,7 +140,10 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
             if (second.regions < 0) { stop("bin size must be a positive integer") }
             binned <- .getBinID(fragments, second.regions)
             to.add.query <- seq_along(fragments)
-            to.add.subject <- binned$id
+
+            if (length(fragments)==0L) { to.add.subject <- integer(0) } # To accommodate DNase-C experiments.
+            else { to.add.subject <- binned$id }
+
             second.regions <- binned$region
             remaining2 <- seq_along(second.regions)
        }
@@ -217,6 +220,7 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 #
 # written by Aaron Lun
 # created 17 March 2017
+# last modified 19 March 2017
 {
     nlibs <- length(files)
 	if (nlibs==0L) { stop("number of libraries must be positive") } 
@@ -231,11 +235,11 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 
     # Processing regions.
     reg.out <- .processRegions(regions, chrs, param$fragments, type, second.regions)
-    region1 <- reg.out$regions
+    regions <- reg.out$regions
     if (!is.null(second.regions)) { 
         iss <- reg.out$regions$is.second
-        region1 <- reg.out$regions[!iss]
-        region2 <- reg.out$regions[iss]
+        region1 <- regions[!iss]
+        region2 <- regions[iss]
         d1 <- which(!iss)
         d2 <- which(iss)
     }
@@ -262,16 +266,13 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
             collected <- list()
             for (lib in seq_along(pairs)) {
                 cpair <- pairs[[lib]] 
-                five1 <- cpair$anchor1.pos + ifelse(cpair$anchor1.len < 0L, -1L-cpair$anchor1.len, 0L)
-                five2 <- cpair$anchor2.pos + ifelse(cpair$anchor2.len < 0L, -1L-cpair$anchor2.len, 0L)
-
-                sgi <- suppressWarnings(GInteractions(GRanges(anchor, IRanges(five1, width=1)),
-                                                      GRanges(target, IRanges(five2, width=1)),
+                sgi <- suppressWarnings(GInteractions(GRanges(anchor, IRanges(cpair$anchor1.pos, width=abs(cpair$anchor1.len))),
+                                                      GRanges(target, IRanges(cpair$anchor2.pos, width=abs(cpair$anchor2.len))),
                                                       mode="strict"))
                 if (is.null(second.regions)) { 
-                    li <- linkOverlaps(sgi, region1)
+                    li <- linkOverlaps(sgi, regions, type=type)
                 } else {
-                    li <- linkOverlaps(sgi, region1, region2)
+                    li <- linkOverlaps(sgi, region1, region2, type=type)
                     li$subject1 <- d1[li$subject1]
                     li$subject2 <- d2[li$subject2]
                 }

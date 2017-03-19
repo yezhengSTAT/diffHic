@@ -108,7 +108,7 @@
     }
     suppressWarnings(everything <- do.call(c, everything))
     seqlengths(everything) <- ref.len
-    everything$nfrags <- 1L
+    everything$nfrags <- 0L
     return(list(id=seq_along(everything), region=everything))
 }
 
