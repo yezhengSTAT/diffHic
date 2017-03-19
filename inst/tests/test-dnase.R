@@ -313,6 +313,52 @@ concomp(chrs, 100, 100, regs, rlen=10L, filter=1L, restrict=NULL, cap=NA, second
 concomp(chrs, 100, 100, regs, rlen=10L, filter=1L, restrict=NULL, cap=NA, seconds=500)
 
 ##################################################################################################
+# Miscellaneous bits and pieces, to check they work properly with DNase-C data.
+
+# boxPairs.
+
+set.seed(34234)
+chrs <- c(chrA=1000, chrB=2000)
+simDNA(file1, chrs, 1000, 10)   
+simDNA(file2, chrs, 1000, 10)  
+
+param <- pairParam( GRanges(seqlengths=chrs))
+y1 <- squareCounts(c(file1, file2), param=param, width=100, filter=1L)
+y2 <- squareCounts(c(file1, file2), param=param, width=200, filter=1L)
+
+checkFUN <- function(y, box) {
+    olap <- findOverlaps(y, box, type="within")
+    stopifnot(identical(queryHits(olap), seq_len(nrow(y))))
+    return(subjectHits(olap))
+}
+
+out <- boxPairs(y1, y2)
+out$interactions
+stopifnot(identical(out$indices[[1]], checkFUN(y1, out$interactions)))
+stopifnot(identical(out$indices[[2]], checkFUN(y2, out$interactions)))
+
+out <- boxPairs(y1, y2, reference=400)
+out$interactions
+stopifnot(identical(out$indices[[1]], checkFUN(y1, out$interactions)))
+stopifnot(identical(out$indices[[2]], checkFUN(y2, out$interactions)))
+
+# getArea
+
+head(getArea(y1))
+head(getArea(y1, bp=FALSE))
+
+# Plotting.
+
+pdf("temp-dna/out.pdf")
+plotPlaid(file1, param, first.region=GRanges("chrA", IRanges(1, 100)), 
+          second.region=GRanges("chrA", IRanges(1, 200)), width=50, diag=TRUE)
+plotPlaid(file1, param, first.region=GRanges("chrA", IRanges(1, 100)), 
+          second.region=GRanges("chrB", IRanges(1, 200)), width=50, diag=TRUE)
+rotPlaid(file1, param, region=GRanges("chrA", IRanges(1, 200)), width=50)
+rotPlaid(file1, param, region=GRanges("chrB", IRanges(1, 200)), width=50)
+dev.off()
+
+##################################################################################################
 # Cleaning up.
 
 unlink("temp-dna", recursive=TRUE)
