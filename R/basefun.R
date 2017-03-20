@@ -12,42 +12,6 @@
 
 ####################################################################################################
 
-.process_output <- function(c_out, file, chrs, chr.start) 
-# Converts the output of the C++ code in preparePairs or prepPseudoPairs
-# into HDF5 files. Also formats and returns the diagnostics.
-{
-    .initializeH5(file)
-    for (a1.dex in seq_along(c_out[[1]])) { 
-        curnames <- c_out[[1]][[a1.dex]]
-        not.empty <- curnames!=""
-        if (!any(not.empty)) { next }
-        anchor1 <- chrs[a1.dex]
-        .addGroup(file, anchor1)
-
-        for (a2.dex in which(not.empty)) { 
-            anchor2 <- chrs[a2.dex]
-            current.file <- curnames[a2.dex]
-            out <- read.table(current.file, header=FALSE, colClasses="integer")
-            colnames(out) <- c("anchor1.id", "anchor2.id", "anchor1.pos", "anchor2.pos", "anchor1.len", "anchor2.len")
-
-            out$anchor1.id <- out$anchor1.id+chr.start[[anchor1]]
-            out$anchor2.id <- out$anchor2.id+chr.start[[anchor2]]
-            out <- out[order(out$anchor1.id, out$anchor2.id),,drop=FALSE]
-            rownames(out)<-NULL
-            .writePairs(out, file, anchor1, anchor2)
-        }
-    }
-
-    c_out <- c_out[-1]
-    names(c_out) <- c("pairs", "same.id", "singles", "chimeras")
-    names(c_out$pairs) <-c("total", "marked", "filtered", "mapped")
-    names(c_out$same.id) <- c("dangling", "self.circle")
-    names(c_out$chimeras) <- c("total", "mapped", "multi", "invalid")
-    return(c_out)
-}
-
-####################################################################################################
-
 .getBinID <- function(fragments, width) 
 # Determines which bin each restriction fragment is in. Also records the rounded
 # start and stop site for each bin. Returns a set of bin ids for each restriction
