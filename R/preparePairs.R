@@ -5,7 +5,7 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
 #
 # written by Aaron Lun
 # created 30 May 2013
-# last modified 20 March 2017
+# last modified 22 March 2017
 {
 	# Enforcing input types.
 	minq <- as.integer(minq)
@@ -41,14 +41,14 @@ preparePairs <- function(bam, param, file, dedup=TRUE, minq=NA, ichim=TRUE, chim
 	# Preparing cuts; start positions, end positions, index in 'fragments', segmented by chromosome.
 	# Anchor order is defined by the order of chromosomes in 'fragments'; earlier chromosomes
 	# are designated as the second anchor when compared to later chromosomes.
-	scuts <- ecuts <- list()
-	boost.idx<- list()
 	frag.data <- .splitByChr(fragments)
 	chrs <- frag.data$chr
+    nchrs <- length(chrs)
+	scuts <- ecuts <- boost.idx <- vector("list", nchrs)
 
-	curends<-end(fragments)
-	curstarts<-start(fragments)
-	for (x in seq_along(chrs)) {
+	curends <- end(fragments)
+	curstarts <- start(fragments)
+	for (x in seq_len(nchrs)) { 
 		curdex <- frag.data$first[x]:frag.data$last[x]
 		scuts[[x]] <- curstarts[curdex]
 		ecuts[[x]] <- curends[curdex]
