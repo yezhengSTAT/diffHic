@@ -342,6 +342,26 @@ out$interactions
 stopifnot(identical(out$indices[[1]], checkFUN(y1, out$interactions)))
 stopifnot(identical(out$indices[[2]], checkFUN(y2, out$interactions)))
 
+# Patch extraction.
+
+yref <- squareCounts(file1, param=param, width=100, filter=1L)
+dummy.1 <- resize(regions(yref)[1], width=200)
+
+patch <- extractPatch(file1, param, dummy.1, width=100)
+ref <- yref[overlapsAny(yref, dummy.1, use.region="first") & overlapsAny(yref, dummy.1, use.region="second"),1]
+stopifnot(identical(anchors(patch, id=TRUE), anchors(ref, id=TRUE)))
+stopifnot(identical(regions(patch), regions(ref)))
+stopifnot(identical(assay(patch), assay(ref)))
+interactions(patch)
+
+dummy.2 <- resize(regions(yref)[length(regions(yref))], fix="end", width=200)
+patch <- extractPatch(file1, param, dummy.1, dummy.2, width=100)
+ref <- yref[overlapsAny(yref, dummy.2, use.region="first") & overlapsAny(yref, dummy.1, use.region="second"),1]
+stopifnot(identical(anchors(patch, id=TRUE), anchors(ref, id=TRUE)))
+stopifnot(identical(regions(patch), regions(ref)))
+stopifnot(identical(assay(patch), assay(ref)))
+interactions(patch)
+
 # getArea
 
 head(getArea(y1))
