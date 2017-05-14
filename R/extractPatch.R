@@ -4,22 +4,19 @@ extractPatch <- function(file, param, first.region, second.region=first.region, 
 #
 # written by Aaron Lun
 # created 13 May 2017
+# last modified 14 May 2017
 {
     # Setting up the parameters
     width <- as.integer(width) 
-    parsed <- .parseParam(param, width)
+    parsed <- .parseParam(param, bin=TRUE, width=width)
     chrs <- parsed$chrs
     frag.by.chr <- parsed$frag.by.chr
     discard <- parsed$discard
     cap <- parsed$cap
     bwidth <- parsed$bwidth
-    
-    fragments <- param$fragments
-    new.pts <- .getBinID(fragments, width)
-    if (length(fragments)==0L) { 
-        fragments <- new.pts$region
-    }
-    bin.by.chr <- .splitByChr(new.pts$region)
+    bin.region <- parsed$bin.region
+    bin.id <- parsed$bin.id
+    bin.by.chr <- parsed$bin.by.chr
 
     # Checking the inputs.
     first.chr <- as.character(seqnames(first.region))
@@ -32,9 +29,9 @@ extractPatch <- function(file, param, first.region, second.region=first.region, 
     
     # Identifying the boxes that lie within our ranges of interest. We give it some leeway
     # to ensure that edges of the plot are retained.
-    keep.frag.first <- keep.frag.second <- suppressWarnings(overlapsAny(new.pts$region, first.region)[new.pts$id])
+    keep.frag.first <- keep.frag.second <- suppressWarnings(overlapsAny(bin.region, first.region)[bin.id])
     if (suppressWarnings(first.region!=second.region)) { 
-        keep.frag.second <- suppressWarnings(overlapsAny(new.pts$region, second.region)[new.pts$id])
+        keep.frag.second <- suppressWarnings(overlapsAny(bin.region, second.region)[bin.id])
     }
 
     # Pulling out the read pair indices from each file, and checking whether chromosome names are flipped around.
@@ -70,9 +67,9 @@ extractPatch <- function(file, param, first.region, second.region=first.region, 
     }
 
     # Collating them into counts and creating an output ISet.
-    out <- .Call(cxx_count_patch, list(current[retain,]), new.pts$id, 1L, t.start, t.end)
+    out <- .Call(cxx_count_patch, list(current[retain,]), bin.id, 1L, t.start, t.end)
     if (is.character(out)) { stop(out) }
     return(InteractionSet(list(counts=out[[3]]), metadata=List(param=param, width=width, flipped=flipped),
                           interactions=GInteractions(anchor1=out[[1]], anchor2=out[[2]], 
-                                                     regions=new.pts$region, mode="reverse"))) 
+                                                     regions=bin.region, mode="reverse"))) 
 }

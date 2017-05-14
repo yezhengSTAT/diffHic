@@ -6,10 +6,9 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 #
 # written by Aaron Lun
 # a long time ago.
-# last modified 17 March 2017
+# last modified 14 May 2017
 {
-	fragments <- param$fragments
-    if (length(fragments)==0L) {
+    if (.isDNaseC(param)) {
         return(.connectCountsRaw(files, param, regions, filter=filter, type=type, second.regions=second.regions))
     }    
     
@@ -17,14 +16,15 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 	if (nlibs==0L) { stop("number of libraries must be positive") } 
 	filter <- as.integer(filter)
     
-    parsed <- .parseParam(param)
+    parsed <- .parseParam(param, bin=FALSE)
     chrs <- parsed$chrs
     frag.by.chr <- parsed$frag.by.chr
     cap <- parsed$cap
     discard <- parsed$discard
-    restrict <- param$restrict
+    restrict <- parsed$restrict
 
     # Processing regions.
+	fragments <- param$fragments
     reg.out <- .processRegions(regions, chrs, fragments, type, second.regions)
     regions <- reg.out$regions
     frag.ids <- reg.out$frag.ids
@@ -138,11 +138,15 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
         } else {
             second.regions <- as.integer(second.regions)
             if (second.regions < 0) { stop("bin size must be a positive integer") }
-            binned <- .getBinID(fragments, second.regions)
-            to.add.query <- seq_along(fragments)
 
-            if (length(fragments)==0L) { to.add.subject <- integer(0) } # To accommodate DNase-C experiments.
-            else { to.add.subject <- binned$id }
+            if (.isDNaseC(fragments=fragments)) { # Alternating the bin creation strategy.
+                binned <- .createBins(fragments, second.regions)
+                to.add.query <- to.add.subject <- integer(0) 
+            } else { 
+                binned <- .assignBins(fragments, second.regions)
+                to.add.query <- seq_along(fragments)
+                to.add.subject <- binned$id 
+            }
 
             second.regions <- binned$region
             remaining2 <- seq_along(second.regions)
@@ -178,8 +182,9 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 }
 
 .redefineRegions <- function(olaps, fragments, regions) 
-# Stretches out regions to encompass the fragments it overlaps
-# (regions that don't overlap any fragments are ignored).
+# Stretches out each region to encompass the fragments it overlaps
+# (regions that don't overlap any fragments are not modified,
+# which allows safe use for DNase-C data.
 {
 	so <- subjectHits(olaps)
 	qo <- queryHits(olaps)
@@ -220,18 +225,18 @@ connectCounts <- function(files, param, regions, filter=1L, type="any", second.r
 #
 # written by Aaron Lun
 # created 17 March 2017
-# last modified 19 March 2017
+# last modified 14 May 2017
 {
     nlibs <- length(files)
 	if (nlibs==0L) { stop("number of libraries must be positive") } 
 	filter <- as.integer(filter)
     
-    parsed <- .parseParam(param)
+    parsed <- .parseParam(param, bin=FALSE)
     chrs <- parsed$chrs
     frag.by.chr <- parsed$frag.by.chr
     cap <- parsed$cap
     discard <- parsed$discard
-    restrict <- param$restrict
+    restrict <- parsed$restrict
 
     # Processing regions.
     reg.out <- .processRegions(regions, chrs, param$fragments, type, second.regions)

@@ -12,12 +12,12 @@ totalCounts <- function(files, param)
 	full.sizes <- integer(nlibs)
 
 	# Setting up other local references.
-    parsed <- .parseParam(param)
+    parsed <- .parseParam(param, bin=FALSE)
     chrs <- parsed$chrs
     frag.by.chr <- parsed$frag.by.chr
     cap <- parsed$cap
     discard <- parsed$discard
-    restrict <- param$restrict
+    restrict <- parsed$restrict
 
 	# Running through each pair of chromosomes.
 	overall <- .loadIndices(files, chrs, restrict)
