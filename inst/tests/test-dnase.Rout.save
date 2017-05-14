@@ -382,7 +382,7 @@ Type 'q()' to quit R.
 +     regions$original <- seq_along(regions)
 +     if (!is.null(seconds)) {
 +         if (is.numeric(seconds)) {
-+             extras <- diffHic:::.getBinID(param$fragments, seconds)$region
++             extras <- diffHic:::.createBins(param$fragments, seconds)$region
 +         } else {
 +             extras <- seconds
 +             extras$nfrags <- 0L
@@ -782,12 +782,13 @@ ReverseStrictGInteractions object with 3 interactions and 0 metadata columns:
 > stopifnot(identical(regions(patch), regions(ref)))
 > stopifnot(identical(assay(patch), assay(ref)))
 > interactions(patch)
-ReverseStrictGInteractions object with 3 interactions and 0 metadata columns:
+ReverseStrictGInteractions object with 4 interactions and 0 metadata columns:
       seqnames1      ranges1     seqnames2    ranges2
           <Rle>    <IRanges>         <Rle>  <IRanges>
-  [1]      chrB [1801, 1900] ---      chrA [101, 200]
-  [2]      chrB [1901, 2000] ---      chrA [  1, 100]
-  [3]      chrB [1901, 2000] ---      chrA [101, 200]
+  [1]      chrB [1801, 1900] ---      chrA [  1, 100]
+  [2]      chrB [1801, 1900] ---      chrA [101, 200]
+  [3]      chrB [1901, 2000] ---      chrA [  1, 100]
+  [4]      chrB [1901, 2000] ---      chrA [101, 200]
   -------
   regions: 30 ranges and 1 metadata column
   seqinfo: 2 sequences from an unspecified genome
@@ -822,4 +823,4 @@ null device
 > 
 > proc.time()
    user  system elapsed 
- 54.532   0.308  54.843 
+ 54.884   0.336  55.219 

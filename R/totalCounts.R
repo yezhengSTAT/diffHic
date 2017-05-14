@@ -5,7 +5,7 @@ totalCounts <- function(files, param)
 #
 # written by Aaron Lun
 # created 17 September 2014
-# last modified 17 March 2017
+# last modified 14 May 2017
 {
 	nlibs <- length(files)
 	if (nlibs==0L) { stop("number of libraries must be positive") }

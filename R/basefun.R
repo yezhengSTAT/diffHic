@@ -238,12 +238,11 @@
 # by the error-checking machinery later on.
 {
     id <- as.integer(ceiling(read.pos/bin.width)) - 1L + first.bin
-    is.rev <- read.len < 0L
-    is.okay <- id[is.rev] <= last.bin # should be TRUE for all reverse reads.
+    is.ok.rev <- read.len < 0L & id <= last.bin # i.e., reverse reads with valid starting positions.
 
-    rev5 <- read.pos[is.rev] - read.len[is.rev] - 1L
-    rid <- pmin(last.bin, as.integer(ceiling(rev5/bin.width)) - 1L + first.bin)
-    id[is.rev][is.okay] <- rid[is.okay] # pmin only applies for reverse reads that were already okay.   
+    rev5 <- read.pos[is.ok.rev] - read.len[is.ok.rev] - 1L
+    rid <- as.integer(ceiling(rev5/bin.width)) - 1L + first.bin
+    id[is.ok.rev] <- pmin(last.bin, rid) # pmin only rescues reverse reads that were already okay.   
     return(id)
 }
 
